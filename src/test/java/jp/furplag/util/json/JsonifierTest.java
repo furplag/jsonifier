@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2017+ furplag (https://github.com/furplag)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package jp.furplag.util.json;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -213,7 +228,7 @@ public class JsonifierTest {
     }
   }
 
-  // @Test
+  @Test
   public void testDeserializeLazy() {
     assertEquals(Boolean.class.toGenericString(), Boolean.TRUE, Jsonifier.deserializeLazy("true", Boolean.class));
     assertEquals(Byte.class.toGenericString(), Byte.valueOf("127"), Jsonifier.deserializeLazy("127", Byte.class));
@@ -236,5 +251,4 @@ public class JsonifierTest {
     assertEquals("Serializable", new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23)), Jsonifier.deserializeLazy("{\"serialNo\": 3, \"codeName\": \"doler\", \"created\": \"1996-01-23\"}", TheEntitySerializable.class));
     assertEquals(new Moron().suchAs("silly"), Jsonifier.deserializeLazy("{\"suchAs\":\"silly\"}", Moron.class));
   }
-
 }
