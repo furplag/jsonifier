@@ -213,7 +213,7 @@ public class JsonifierTest {
     }
   }
 
-  // @Test
+  @Test
   public void testDeserializeLazy() {
     assertEquals(Boolean.class.toGenericString(), Boolean.TRUE, Jsonifier.deserializeLazy("true", Boolean.class));
     assertEquals(Byte.class.toGenericString(), Byte.valueOf("127"), Jsonifier.deserializeLazy("127", Byte.class));
