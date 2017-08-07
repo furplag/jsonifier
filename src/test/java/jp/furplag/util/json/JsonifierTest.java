@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,6 +36,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 public class JsonifierTest {
+
+  @Before
+  public void before() {
+    System.setProperty("line.separator", "\n");
+  }
 
   @EqualsAndHashCode
   static final class Nothing {}
@@ -131,12 +137,12 @@ public class JsonifierTest {
       List<Entry<String, String>> orokuji_x = orokuji.entrySet().stream().sorted(new Comparator<Entry<String, String>>() {
         @Override public int compare(Entry<String, String> o1, Entry<String, String> o2) {return o1.getKey().compareTo(o2.getKey());}
       }).collect(Collectors.toList());
-      assertEquals("Map", "[{\"仏\":\"\"},{\"南\":\"無阿弥陀仏\"},{\"弥\":\"陀仏\"},{\"無\":\"阿弥陀仏\"},{\"阿\":\"弥陀仏\"},{\"陀\":\"仏\"}]", Jsonifier.serialize(orokuji_x).replaceAll("[\\s\\r\\n]", ""));
+      assertEquals("Map", "[{\"仏\":\"\"},{\"南\":\"無阿弥陀仏\"},{\"弥\":\"陀仏\"},{\"無\":\"阿弥陀仏\"},{\"阿\":\"弥陀仏\"},{\"陀\":\"仏\"}]", Jsonifier.serialize(orokuji_x).replaceAll("[\\s\\\n]", ""));
 
       assertEquals("Empty", "{ }", Jsonifier.serialize(new Nothing()));
-      assertEquals("Object", "{\r\n  \"serialNo\" : 1,\r\n  \"codeName\" : \"Lorem\"\r\n}", Jsonifier.serialize(new TheEntity(1L, "Lorem")));
-      assertEquals("Extended", "{\r\n  \"serialNo\" : 2,\r\n  \"codeName\" : \"ipsum\",\r\n  \"created\" : \"1996-01-23\"\r\n}", Jsonifier.serialize(new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23))));
-      assertEquals("Serializable", "{\r\n  \"serialNo\" : 3,\r\n  \"codeName\" : \"doler\",\r\n  \"created\" : \"1996-01-23\"\r\n}", Jsonifier.serialize(new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23))));
+      assertEquals("Object", "{\n  \"serialNo\" : 1,\n  \"codeName\" : \"Lorem\"\n}", Jsonifier.serialize(new TheEntity(1L, "Lorem")));
+      assertEquals("Extended", "{\n  \"serialNo\" : 2,\n  \"codeName\" : \"ipsum\",\n  \"created\" : \"1996-01-23\"\n}", Jsonifier.serialize(new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23))));
+      assertEquals("Serializable", "{\n  \"serialNo\" : 3,\n  \"codeName\" : \"doler\",\n  \"created\" : \"1996-01-23\"\n}", Jsonifier.serialize(new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23))));
     } catch (Throwable t) {
       t.printStackTrace();
       fail(t.getLocalizedMessage());
@@ -174,15 +180,15 @@ public class JsonifierTest {
       List<Entry<String, String>> orokuji_x = orokuji.entrySet().stream().sorted(new Comparator<Entry<String, String>>() {
         @Override public int compare(Entry<String, String> o1, Entry<String, String> o2) {return o1.getKey().compareTo(o2.getKey());}
       }).collect(Collectors.toList());
-      assertEquals("Map", "[{\"仏\":\"\"},{\"南\":\"無阿弥陀仏\"},{\"弥\":\"陀仏\"},{\"無\":\"阿弥陀仏\"},{\"阿\":\"弥陀仏\"},{\"陀\":\"仏\"}]", Jsonifier.serializeLazy(orokuji_x).replaceAll("[\\s\\r\\n]", ""));
+      assertEquals("Map", "[{\"仏\":\"\"},{\"南\":\"無阿弥陀仏\"},{\"弥\":\"陀仏\"},{\"無\":\"阿弥陀仏\"},{\"阿\":\"弥陀仏\"},{\"陀\":\"仏\"}]", Jsonifier.serializeLazy(orokuji_x).replaceAll("[\\s\\\n]", ""));
 
       assertEquals("Empty", "{ }", Jsonifier.serializeLazy(new Nothing()));
-      assertEquals("Object", "{\r\n  \"serialNo\" : 1,\r\n  \"codeName\" : \"Lorem\"\r\n}", Jsonifier.serializeLazy(new TheEntity(1L, "Lorem")));
-      assertEquals("Extended", "{\r\n  \"serialNo\" : 2,\r\n  \"codeName\" : \"ipsum\",\r\n  \"created\" : \"1996-01-23\"\r\n}", Jsonifier.serializeLazy(new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23))));
-      assertEquals("Serializable", "{\r\n  \"serialNo\" : 3,\r\n  \"codeName\" : \"doler\",\r\n  \"created\" : \"1996-01-23\"\r\n}", Jsonifier.serializeLazy(new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23))));
+      assertEquals("Object", "{\n  \"serialNo\" : 1,\n  \"codeName\" : \"Lorem\"\n}", Jsonifier.serializeLazy(new TheEntity(1L, "Lorem")));
+      assertEquals("Extended", "{\n  \"serialNo\" : 2,\n  \"codeName\" : \"ipsum\",\n  \"created\" : \"1996-01-23\"\n}", Jsonifier.serializeLazy(new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23))));
+      assertEquals("Serializable", "{\n  \"serialNo\" : 3,\n  \"codeName\" : \"doler\",\n  \"created\" : \"1996-01-23\"\n}", Jsonifier.serializeLazy(new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23))));
 
       assertNull(Jsonifier.serializeLazy(new Moron()));
-      assertEquals("{\"suchAs\":\"silly\",\"meh\":5}", Jsonifier.serializeLazy(new Moron().suchAs("silly")).replaceAll("[\\s\\r\\n]", ""));
+      assertEquals("{\"suchAs\":\"silly\",\"meh\":5}", Jsonifier.serializeLazy(new Moron().suchAs("silly")).replaceAll("[\\s\\\n]", ""));
     } catch (Throwable t) {
       t.printStackTrace();
       fail(t.getLocalizedMessage());
