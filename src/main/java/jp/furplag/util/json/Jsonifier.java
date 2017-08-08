@@ -15,26 +15,29 @@
  */
 package jp.furplag.util.json;
 
-import java.time.LocalDate;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
+import jp.furplag.util.json.deser.LenientLDTDeserializer;
 
 /**
  * utilities for convert between Object and JSON.
@@ -45,14 +48,10 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 public class Jsonifier {
 
   /**
-   * Jsonifier instances should NOT be constructed in standard programming.
-   */
-  protected Jsonifier() {}
-
-  /**
    * {@link com.fasterxml.jackson.databind.ObjectMapper ObjectMapper}.
    */
-  static final ObjectMapper mapper;
+  private static final ObjectMapper mapper;
+
   static {
     // @formatter:off
     mapper = new ObjectMapper()
@@ -60,113 +59,145 @@ public class Jsonifier {
         new ParameterNamesModule()
       , new Jdk8Module()
       , new JavaTimeModule()
-        .addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ISO_LOCAL_DATE))
-        .addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-        .addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ISO_LOCAL_DATE))
-        .addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        .addDeserializer(LocalDateTime.class, new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
       )
-      // enabling
       .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
-      .configure(SerializationFeature.INDENT_OUTPUT, true)
-      .configure(SerializationFeature.WRITE_ENUMS_USING_INDEX, true)
-      .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
-      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
-      .configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true)
 
-      // disabling
-      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
+      .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+
+      // Allow /** comment */ .
+      .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+      // Allow # comment .
+      .configure(JsonParser.Feature.ALLOW_YAML_COMMENTS, true)
+      // Allow "{"key": "value"... , }" .
+      .configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true)
+      // Allow "{'key': 'value'}" .
+      .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+      // Allow "{key: "value"}" .
+      .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
+
+      // pretty print for Date/Time .
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 
-      .setVisibility(PropertyAccessor.ALL, Visibility.NONE)
-      .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
+      // sort by key name .
+      .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+      // against failure if no fields .
+      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+      // against failure if undefined field .
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
+
+      // igonre empty field .
+      .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
     ;
     // @formatter:off
   }
 
   /**
-   * stringify specified object. Throw exceptions if stringify has failed.
+   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
+   * <ul>
+   * <li>{@link java.lang.Class} .</li>
+   * <li>{@link com.fasterxml.jackson.core.type.TypeReference TypeReference} .</li>
+   * <li>{@link com.fasterxml.jackson.databind.JavaType JavaType} .</li>
+   * </ul>
+   *
+   * @param json JSON text .
+   * @param valueType type of instance .
+   * @return the instance of specified class represented by {@code valueType} .
+   * @throws JsonParseException
+   * @throws JsonMappingException
+   * @throws IOException
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
+    if (Objects.isNull(json)) return null;
+    if (json.isEmpty()) return null;
+    if (!Objects.isNull(valueType)) {
+      if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
+        return deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
+      }
+      if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
+        return deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+      }
+      if (valueType.getClass().equals(Class.class)) {
+        return deserialize(json, (Class<T>) valueType);
+      }
+    } else {
+      return null;
+    }
+
+    throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
+  }
+
+  /**
+   * stringify specified object. Throw exceptions if that has failed.
    *
    * @param source an Object, may be null.
    * @return JSON String.
+   * @throws JsonProcessingException
    * @throws Throwable
    */
-  public static String serialize(final Object source) throws Throwable {
+  public static String serialize(final Object source) throws JsonProcessingException {
     return source == null ? null : mapper.writeValueAsString(source);
   }
 
   /**
-   * stringify specified object. Return {@code null} if stringify has failed.
-   *
-   * @param source an Object, may be null.
-   * @return JSON String.
-   */
-  public static String serializeLazy(final Object source) {
-    try {
-      return serialize(source);
-    } catch (Throwable t) {}
-
-    return null;
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if convert has failed.
+   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
    * @param json JSON String.
    * @param type destination Class.
    * @return the instance of specified Class.
-   * @throws Throwable
+   * @throws IOException
+   * @throws JsonMappingException
+   * @throws JsonParseException
    */
-  public static <T> T deserialize(final String json, final Class<T> type) throws Throwable {
+  private static <T> T deserialize(final String json, final Class<T> type) throws JsonParseException, JsonMappingException, IOException {
     if (json != null && type != null) return mapper.readValue(json, type);
 
     return null;
   }
 
   /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if convert has failed.
+   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
+   *
+   * @param json JSON String.
+   * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
+   * @return the instance of specified Class.
+   * @throws IOException
+   * @throws JsonMappingException
+   * @throws JsonParseException
+   */
+  private static <T> T deserialize(final String json, final JavaType javaType) throws JsonParseException, JsonMappingException, IOException {
+    if (json != null && javaType != null) return mapper.readValue(json, javaType);
+
+    return null;
+  }
+
+  /**
+   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
    * @param json JSON String.
    * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
    * @return the instance of specified Class.
-   * @throws Throwable
+   * @throws IOException
+   * @throws JsonMappingException
+   * @throws JsonParseException
    */
-  public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws Throwable {
+  private static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonParseException, JsonMappingException, IOException {
     if (json != null && valueTypeRef != null) return mapper.readValue(json, valueTypeRef);
 
     return null;
   }
 
   /**
-   * create the instance of specified class represented by the JSON String. Return {@code null} if convert has failed.
-   *
-   * @param json JSON String.
-   * @param type destination Class.
-   * @return the instance of specified Class.
-   * @throws Throwable
+   * Jsonifier instances should NOT be constructed in standard programming.
    */
-  public static <T> T deserializeLazy(final String json, final Class<T> type) {
-    try {
-      return deserialize(json, type);
-    } catch (Throwable t) {}
+  protected Jsonifier() {}
 
-    return null;
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. Return {@code null} if convert has failed.
-   *
-   * @param json JSON String.
-   * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
-   * @return the instance of specified Class.
-   * @throws Throwable
-   */
-  public static <T> T deserializeLazy(final String json, final TypeReference<T> valueTypeRef) {
-    try {
-      return deserialize(json, valueTypeRef);
-    } catch (Throwable t) {}
-
-    return null;
+  public static void main(String[] args) throws Throwable {
+    DateTimeFormatter.ofPattern("yyyy/MM/dd").format(null);
+    System.out.println(Objects.toString( deserialize("[1,23,456]", mapper.getTypeFactory().constructCollectionType(List.class, Integer.class))));
+    System.out.println(Objects.toString( deserialize("[1,23,456]", String[].class)));
   }
 }
