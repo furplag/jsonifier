@@ -38,27 +38,29 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
 
   @Override
   public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+    LocalDateTime deserialized = null;
     if (parser.hasTokenId(JsonTokenId.ID_STRING)) {
       String string = parser.getText().trim();
-      if (string.length() == 0) {
-        return null;
-      }
       try {
         if (string.length() == 10) {
-          return LocalDate.parse(string.replaceAll("[\\/\\.\\-]", "-"), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+          deserialized = parseDateToDateTime(string);
+        } else if (8 == string.length() && string.matches("^\\d{8}$")) {
+          deserialized = LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
         } else if (8 <= string.length() && string.length() < 10) {
           int[] ymds = Arrays.stream(string.split("[\\/\\.\\-]")).filter(((Predicate<String>)String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray();
-          if (ymds.length == 3) {
-            return LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
-          } else if (8 == string.length() && string.matches("^\\d{8}$")) {
-            return LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
-          }
+          deserialized = ymds.length != 3 ? null : LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
+        } else {
+          deserialized = super.deserialize(parser, context);
         }
       } catch (DateTimeException e) {
           _rethrowDateTimeException(parser, context, e, string);
       }
     }
 
-    return super.deserialize(parser, context);
+    return deserialized;
+  }
+
+  private LocalDateTime parseDateToDateTime (final String dateString) {
+    return LocalDate.parse(dateString.replaceAll("[\\/\\.\\-]", "-"), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
   }
 }

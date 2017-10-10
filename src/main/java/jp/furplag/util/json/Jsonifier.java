@@ -1,21 +1,24 @@
 /**
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *         http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package jp.furplag.util.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -109,20 +112,19 @@ public class Jsonifier {
   @SuppressWarnings("unchecked")
   public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
     T result = null;
-    if (!Objects.isNull(json) && !json.isEmpty() && !Objects.isNull(valueType)) {
-      if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
-        result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
-      } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
-        result = deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
-      } else if (valueType.getClass().equals(Class.class)) {
-        result = deserialize(json, (Class<T>) valueType);
-      }
-    }
-    if (result != null) {
+    if (Objects.isNull(json) || json.isEmpty() || Objects.isNull(valueType)) {
       return result;
+    } else if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
+      result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
+    } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
+      result = deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+    } else if (valueType.getClass().equals(Class.class)) {
+      result = deserialize(json, (Class<T>) valueType);
+    } else {
+      throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
     }
 
-    throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
+    return result;
   }
 
   /**
@@ -189,4 +191,10 @@ public class Jsonifier {
    * Jsonifier instances should NOT be constructed in standard programming.
    */
   protected Jsonifier() {}
+
+  public static void main(String[] args) throws Throwable {
+    DateTimeFormatter.ofPattern("yyyy/MM/dd").format(null);
+    System.out.println(Objects.toString( deserialize("[1,23,456]", mapper.getTypeFactory().constructCollectionType(List.class, Integer.class))));
+    System.out.println(Objects.toString( deserialize("[1,23,456]", String[].class)));
+  }
 }
