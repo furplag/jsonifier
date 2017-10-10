@@ -108,16 +108,17 @@ public class Jsonifier {
    */
   @SuppressWarnings("unchecked")
   public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
-    if (Objects.isNull(json)) return null;
-    if (json.isEmpty()) return null;
-    if (Objects.isNull(valueType)) {
-      return null;
-    } else if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
-      return deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
-    } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
-      return deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
-    } else if (valueType.getClass().equals(Class.class)) {
-      return deserialize(json, (Class<T>) valueType);
+    T result = null;
+    if (!Objects.isNull(json) && !json.isEmpty() && Objects.isNull(valueType)) {
+      if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
+        result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
+      } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
+        result = deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+      } else if (valueType.getClass().equals(Class.class)) {
+        result = deserialize(json, (Class<T>) valueType);
+      }
+
+      if (result != null) return result;
     }
 
     throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
