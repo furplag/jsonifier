@@ -188,10 +188,4 @@ public class Jsonifier {
    * Jsonifier instances should NOT be constructed in standard programming.
    */
   protected Jsonifier() {}
-
-  public static void main(String[] args) throws Throwable {
-    DateTimeFormatter.ofPattern("yyyy/MM/dd").format(null);
-    System.out.println(Objects.toString( deserialize("[1,23,456]", mapper.getTypeFactory().constructCollectionType(List.class, Integer.class))));
-    System.out.println(Objects.toString( deserialize("[1,23,456]", String[].class)));
-  }
 }
