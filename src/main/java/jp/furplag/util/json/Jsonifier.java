@@ -1,17 +1,15 @@
 /**
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package jp.furplag.util.json;
 
@@ -113,18 +111,14 @@ public class Jsonifier {
   public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
     if (Objects.isNull(json)) return null;
     if (json.isEmpty()) return null;
-    if (!Objects.isNull(valueType)) {
-      if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
-        return deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
-      }
-      if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
-        return deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
-      }
-      if (valueType.getClass().equals(Class.class)) {
-        return deserialize(json, (Class<T>) valueType);
-      }
-    } else {
+    if (Objects.isNull(valueType)) {
       return null;
+    } else if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
+      return deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
+    } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
+      return deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+    } else if (valueType.getClass().equals(Class.class)) {
+      return deserialize(json, (Class<T>) valueType);
     }
 
     throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
