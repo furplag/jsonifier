@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/furplag/jsonifier.svg?branch=master)](https://travis-ci.org/furplag/jsonifier)
 [![codebeat badge](https://codebeat.co/badges/342132b8-3920-476f-a5b7-5c5b32be1d6a)](https://codebeat.co/projects/github-com-furplag-jsonifier-master)
+[![Maintainability](https://api.codeclimate.com/v1/badges/8d432f5ace747151d1ed/maintainability)](https://codeclimate.com/github/furplag/jsonifier/maintainability)
 
 Utilities for convert between Object and JSON.
 
