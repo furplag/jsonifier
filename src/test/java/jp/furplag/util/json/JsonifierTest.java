@@ -145,71 +145,10 @@ public class JsonifierTest {
     that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
     that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
     assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class), is(that));
   }
-//
-////  @Test
-//  public void testDeserializeWrappers() {
-//    try {
-//      assertEquals(Boolean.class.toGenericString(), Boolean.TRUE, Jsonifier.deserialize("true", Boolean.class));
-//      assertEquals(Byte.class.toGenericString(), Byte.valueOf("127"), Jsonifier.deserialize("127", Byte.class));
-//      assertEquals(Short.class.toGenericString(), Short.valueOf((short) 128), Jsonifier.deserialize("128", Short.class));
-//      assertEquals(Integer.class.toGenericString(), Integer.valueOf(1), Jsonifier.deserialize("1", Integer.class));
-//      assertEquals(Long.class.toGenericString(), Long.valueOf(123456789L), Jsonifier.deserialize("123456789", Long.class));
-//      assertEquals(Float.class.toGenericString(), Float.valueOf(1.2345679f), Jsonifier.deserialize("1.23456789", Float.class));
-//      assertEquals(Double.class.toGenericString(), Double.valueOf(.123456789), Jsonifier.deserialize("0.123456789", Double.class));
-//      assertEquals(Character.class.toGenericString(), new Character('諸'), Jsonifier.deserialize("\"諸\"", Character.class));
-//
-//    } catch (Throwable t) {
-//      t.printStackTrace();
-//      fail(t.getLocalizedMessage());
-//    }
-//  }
-//
-////  @Test
-//  public void testDeserialize() {
-//    try {
-//      assertNull(Jsonifier.deserialize(null, String.class));
-//      assertEquals("String", "十万億土", Jsonifier.deserialize("\"十万億土\"", String.class));
-//
-//      assertArrayEquals("Array", "南無阿弥陀仏".split(""), Jsonifier.deserialize("[ \"南\", \"無\", \"阿\", \"弥\", \"陀\", \"仏\" ]", String[].class));
-//      assertEquals("List", Arrays.asList("南無阿弥陀仏".split("")), Jsonifier.deserialize("[ \"南\", \"無\", \"阿\", \"弥\", \"陀\", \"仏\" ]", List.class));
-//      assertThat(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toMap(k -> k, v -> "南無阿弥陀仏".replaceAll("^.*" + v, ""), (v1, v2) -> v1)), is(Jsonifier.deserialize("{\"仏\":\"\",\"南\":\"無阿弥陀仏\",\"弥\":\"陀仏\",\"無\":\"阿弥陀仏\",\"阿\":\"弥陀仏\",\"陀\":\"仏\"}", Map.class)));
-//
-//      assertEquals("Empty", new Nothing(), Jsonifier.deserialize("{}", Nothing.class));
-//      assertEquals("Object", new TheEntity(1L, "Lorem"), Jsonifier.deserialize("{\"serialNo\": 1, \"codeName\": \"Lorem\"}", TheEntity.class));
-//      assertEquals("Extended", new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23)), Jsonifier.deserialize("{\"serialNo\": 2, \"codeName\": \"ipsum\", \"created\": \"1996-01-23\"}", TheEntityExtended.class));
-//      assertEquals("Serializable", new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23)), Jsonifier.deserialize("{\"serialNo\": 3, \"codeName\": \"doler\", \"created\": \"1996-01-23\"}", TheEntitySerializable.class));
-//      assertEquals(new Moron().suchAs("silly"), Jsonifier.deserialize("{\"suchAs\":\"silly\"}", Moron.class));
-//    } catch (Throwable t) {
-//      t.printStackTrace();
-//      fail(t.getLocalizedMessage());
-//    }
-//  }
-//
-////  @Test
-//  public void testDeserializeLazy() {
-//    assertEquals(Boolean.class.toGenericString(), Boolean.TRUE, Jsonifier.deserializeLazy("true", Boolean.class));
-//    assertEquals(Byte.class.toGenericString(), Byte.valueOf("127"), Jsonifier.deserializeLazy("127", Byte.class));
-//    assertEquals(Short.class.toGenericString(), Short.valueOf((short) 128), Jsonifier.deserializeLazy("128", Short.class));
-//    assertEquals(Integer.class.toGenericString(), Integer.valueOf(1), Jsonifier.deserializeLazy("1", Integer.class));
-//    assertEquals(Long.class.toGenericString(), Long.valueOf(123456789L), Jsonifier.deserializeLazy("123456789", Long.class));
-//    assertEquals(Float.class.toGenericString(), Float.valueOf(1.2345679f), Jsonifier.deserializeLazy("1.23456789", Float.class));
-//    assertEquals(Double.class.toGenericString(), Double.valueOf(.123456789), Jsonifier.deserializeLazy("0.123456789", Double.class));
-//    assertEquals(Character.class.toGenericString(), new Character('諸'), Jsonifier.deserializeLazy("\"諸\"", Character.class));
-//    assertNull(Jsonifier.deserializeLazy(null, String.class));
-//    assertEquals("String", "十万億土", Jsonifier.deserializeLazy("\"十万億土\"", String.class));
-//
-//    assertArrayEquals("Array", "南無阿弥陀仏".split(""), Jsonifier.deserializeLazy("[ \"南\", \"無\", \"阿\", \"弥\", \"陀\", \"仏\" ]", String[].class));
-//    assertEquals("List", Arrays.asList("南無阿弥陀仏".split("")), Jsonifier.deserializeLazy("[ \"南\", \"無\", \"阿\", \"弥\", \"陀\", \"仏\" ]", List.class));
-//    assertThat(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toMap(k -> k, v -> "南無阿弥陀仏".replaceAll("^.*" + v, ""), (v1, v2) -> v1)), is(Jsonifier.deserializeLazy("{\"仏\":\"\",\"南\":\"無阿弥陀仏\",\"弥\":\"陀仏\",\"無\":\"阿弥陀仏\",\"阿\":\"弥陀仏\",\"陀\":\"仏\"}", Map.class)));
-//
-//    assertEquals("Empty", new Nothing(), Jsonifier.deserializeLazy("{}", Nothing.class));
-//    assertEquals("Object", new TheEntity(1L, "Lorem"), Jsonifier.deserializeLazy("{\"serialNo\": 1, \"codeName\": \"Lorem\"}", TheEntity.class));
-//    assertEquals("Extended", new TheEntityExtended(2L, "ipsum", LocalDate.of(1996, 1, 23)), Jsonifier.deserializeLazy("{\"serialNo\": 2, \"codeName\": \"ipsum\", \"created\": \"1996-01-23\"}", TheEntityExtended.class));
-//    assertEquals("Serializable", new TheEntitySerializable(3L, "doler", LocalDate.of(1996, 1, 23)), Jsonifier.deserializeLazy("{\"serialNo\": 3, \"codeName\": \"doler\", \"created\": \"1996-01-23\"}", TheEntitySerializable.class));
-//    assertEquals(new Moron().suchAs("silly"), Jsonifier.deserializeLazy("{\"suchAs\":\"silly\"}", Moron.class));
-//  }
-//
-////  @Test
-//  public void testStringfied() {}
 }

@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonTokenId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 
@@ -39,28 +38,29 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
   @Override
   public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
     LocalDateTime deserialized = null;
-    if (parser.hasTokenId(JsonTokenId.ID_STRING)) {
-      String string = parser.getText().trim();
-      try {
-        if (string.length() == 10) {
-          deserialized = parseDateToDateTime(string);
-        } else if (8 == string.length() && string.matches("^\\d{8}$")) {
-          deserialized = LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
-        } else if (8 <= string.length() && string.length() < 10) {
-          int[] ymds = Arrays.stream(string.split("[\\/\\.\\-]")).filter(((Predicate<String>)String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray();
-          deserialized = ymds.length != 3 ? null : LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
-        } else {
-          deserialized = super.deserialize(parser, context);
-        }
-      } catch (DateTimeException e) {
-          _rethrowDateTimeException(parser, context, e, string);
+    String string = parser.getText().trim();
+    try {
+      if (string.length() == 10) {
+        deserialized = parseDateToDateTime(string);
+      } else if (8 == string.length() && string.matches("^\\d{8}$")) {
+        deserialized = LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
+      } else if (8 <= string.length() && string.length() < 10) {
+        deserialized = parseArrayToDateTime(Arrays.stream(string.split("[\\/\\.\\-]")).filter(((Predicate<String>)String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray());
+      } else {
+        deserialized = super.deserialize(parser, context);
       }
+    } catch (DateTimeException e) {
+      _rethrowDateTimeException(parser, context, e, string);
     }
 
     return deserialized;
   }
 
   private LocalDateTime parseDateToDateTime (final String dateString) {
-    return LocalDate.parse(dateString.replaceAll("[\\/\\.\\-]", "-"), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+    return dateString == null ? null : LocalDate.parse(dateString.replaceAll("[\\/\\.\\-]", "-"), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+  }
+
+  private LocalDateTime parseArrayToDateTime (final int[] ymds) {
+    return ymds == null ? null : ymds.length != 3 ? null : LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
   }
 }
