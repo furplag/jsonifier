@@ -109,6 +109,7 @@ public class Jsonifier {
   @SuppressWarnings("unchecked")
   public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
     T result = null;
+<<<<<<< HEAD
     if (!Objects.isNull(json) && !json.isEmpty() && !Objects.isNull(valueType)) {
       if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
         result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
@@ -120,6 +121,18 @@ public class Jsonifier {
     }
     if (result != null) {
       return result;
+=======
+    if (!Objects.isNull(json) && !json.isEmpty() && Objects.isNull(valueType)) {
+      if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
+        result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
+      } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
+        result = deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+      } else if (valueType.getClass().equals(Class.class)) {
+        result = deserialize(json, (Class<T>) valueType);
+      }
+
+      if (result != null) return result;
+>>>>>>> branch 'master' of https://github.com/furplag/jsonifier.git
     }
 
     throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
