@@ -113,10 +113,10 @@ public class Jsonifier {
     T result = null;
     if (Objects.isNull(json) || json.isEmpty() || Objects.isNull(valueType)) {
       return result;
-    } else if (valueType instanceof com.fasterxml.jackson.databind.JavaType) {
-      result = deserialize(json, (com.fasterxml.jackson.databind.JavaType) valueType);
-    } else if (valueType.getClass().isAssignableFrom(com.fasterxml.jackson.core.type.TypeReference.class)) {
-      result = deserialize(json, (com.fasterxml.jackson.core.type.TypeReference<T>) valueType);
+    } else if (valueType instanceof JavaType) {
+      result = deserialize(json, (JavaType) valueType);
+    } else if (valueType.getClass().isAssignableFrom(TypeReference.class)) {
+      result = deserialize(json, (TypeReference<T>) valueType);
     } else if (valueType.getClass().equals(Class.class)) {
       result = deserialize(json, (Class<T>) valueType);
     } else {
