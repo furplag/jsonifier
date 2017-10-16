@@ -176,7 +176,7 @@
             <contact>${developer.url}</contact>
           </properties>
           <excludes>
-            <exclude>.licenseHeader</exclude>
+            <exclude>**/.licenseHeader</exclude>
             <exclude>**/LICENSE</exclude>
             <exclude>**/*.yaml</exclude>
             <exclude>**/*.yml</exclude>

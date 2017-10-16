@@ -19,7 +19,6 @@ package jp.furplag.util.json;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -95,39 +94,6 @@ public class Jsonifier {
   }
 
   /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
-   * <ul>
-   * <li>{@link java.lang.Class} .</li>
-   * <li>{@link com.fasterxml.jackson.core.type.TypeReference TypeReference} .</li>
-   * <li>{@link com.fasterxml.jackson.databind.JavaType JavaType} .</li>
-   * </ul>
-   *
-   * @param json JSON text .
-   * @param valueType type of instance .
-   * @return the instance of specified class represented by {@code valueType} .
-   * @throws JsonParseException
-   * @throws JsonMappingException
-   * @throws IOException
-   */
-  @SuppressWarnings("unchecked")
-  public static <T> T deserialize(final String json, final Object valueType) throws JsonParseException, JsonMappingException, IOException {
-    T result = null;
-    if (Objects.isNull(json) || json.isEmpty() || Objects.isNull(valueType)) {
-      return result;
-    } else if (valueType instanceof JavaType) {
-      result = deserialize(json, (JavaType) valueType);
-    } else if (valueType.getClass().isAssignableFrom(TypeReference.class)) {
-      result = deserialize(json, (TypeReference<T>) valueType);
-    } else if (valueType.getClass().equals(Class.class)) {
-      result = deserialize(json, (Class<T>) valueType);
-    } else {
-      throw new IllegalArgumentException("could not deserialize to " + (Objects.isNull(valueType) ? "null" : valueType.getClass().getName()));
-    }
-
-    return result;
-  }
-
-  /**
    * stringify specified object. Throw exceptions if that has failed.
    *
    * @param source an Object, may be null.
@@ -149,8 +115,8 @@ public class Jsonifier {
    * @throws JsonMappingException
    * @throws JsonParseException
    */
-  private static <T> T deserialize(final String json, final Class<T> type) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && type != null) return mapper.readValue(json, type);
+  public static <T> T deserialize(final String json, final Class<T> type) throws JsonParseException, JsonMappingException, IOException {
+    if (json != null && !json.isEmpty() && type != null) return mapper.readValue(json, type);
 
     return null;
   }
@@ -165,8 +131,8 @@ public class Jsonifier {
    * @throws JsonMappingException
    * @throws JsonParseException
    */
-  private static <T> T deserialize(final String json, final JavaType javaType) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && javaType != null) return mapper.readValue(json, javaType);
+  public static <T> T deserialize(final String json, final JavaType javaType) throws JsonParseException, JsonMappingException, IOException {
+    if (json != null && !json.isEmpty() && javaType != null) return mapper.readValue(json, javaType);
 
     return null;
   }
@@ -181,8 +147,8 @@ public class Jsonifier {
    * @throws JsonMappingException
    * @throws JsonParseException
    */
-  private static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && valueTypeRef != null) return mapper.readValue(json, valueTypeRef);
+  public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonParseException, JsonMappingException, IOException {
+    if (json != null && !json.isEmpty() && valueTypeRef != null) return mapper.readValue(json, valueTypeRef);
 
     return null;
   }

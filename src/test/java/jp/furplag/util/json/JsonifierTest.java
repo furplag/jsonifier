@@ -23,11 +23,19 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import jp.furplag.util.json.entity.Instance;
 import jp.furplag.util.json.entity.Nothing;
@@ -37,6 +45,11 @@ public class JsonifierTest {
   @Before
   public void before() {
     System.setProperty("line.separator", "\n");
+  }
+
+  @Test
+  public void Jsonifier() throws Throwable {
+    assertNotNull(new Jsonifier());
   }
 
   @Test
@@ -136,7 +149,15 @@ public class JsonifierTest {
 
   @Test
   public void deserialize() throws Throwable {
-    assertNull("null", Jsonifier.deserialize("[1, 2]", null));
+    assertNull("null", Jsonifier.deserialize("[1, 2]", (Class<?>) null));
+    assertNull("null", Jsonifier.deserialize("[1, 2]", (JavaType) null));
+    assertNull("null", Jsonifier.deserialize("[1, 2]", (TypeReference<?>) null));
+    assertNull("null", Jsonifier.deserialize(null, Instance.class));
+    assertNull("null", Jsonifier.deserialize(null, TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull("null", Jsonifier.deserialize(null, new TypeReference<Instance>(){}));
+    assertNull("null", Jsonifier.deserialize("", Instance.class));
+    assertNull("null", Jsonifier.deserialize("", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull("null", Jsonifier.deserialize("", new TypeReference<Instance>(){}));
     assertThat("nonField", Jsonifier.deserialize("{}", Nothing.class), is(new Nothing()));
     assertThat("unspecified", Jsonifier.deserialize("{name:'john'}", Nothing.class), is(new Nothing()));
 
@@ -151,5 +172,32 @@ public class JsonifierTest {
     assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class), is(that));
     assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class), is(that));
     assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 1, 0, 0, 0);
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    try {
+      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+      fail(" @_@ !? passed.");
+    } catch (Exception e) {
+      assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
+    }
+    try {
+      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
+      fail(" @_@ !? passed.");
+    } catch (Exception e) {
+      assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
+    }
+    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+
+    Map<String, Object> those = new HashMap<>();
+    those.put("versionNo", 1);
+    those.put("deleted", false);
+    those.put("created", LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
+    those.put("modified", LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
+    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>(){}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
+    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>(){}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
   }
 }
