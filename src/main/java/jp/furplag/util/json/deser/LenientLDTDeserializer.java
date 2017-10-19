@@ -40,18 +40,18 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
   public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
     LocalDateTime deserialized = null;
     String string = parser.getText().trim();
-    if (string.length() == 10) {
-      deserialized = parseDateToDateTime(string);
-    } else if (8 == string.length() && string.matches("^\\d{8}$")) {
-      deserialized = LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
-    } else if (8 <= string.length() && string.length() < 10) {
-      deserialized = parseArrayToDateTime(Arrays.stream(string.split("[\\/\\.\\-]")).filter(((Predicate<String>) String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray());
-    } else {
-      try {
+    try {
+      if (string.length() == 10) {
+        deserialized = parseDateToDateTime(string);
+      } else if (8 == string.length() && string.matches("^\\d{8}$")) {
+        deserialized = LocalDate.parse(string, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
+      } else if (8 <= string.length() && string.length() < 10) {
+        deserialized = parseArrayToDateTime(Arrays.stream(string.split("[\\/\\.\\-]")).filter(((Predicate<String>) String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray());
+      } else {
         deserialized = super.deserialize(parser, context);
-      } catch (DateTimeException e) {
-        _rethrowDateTimeException(parser, context, e, string);
       }
+    } catch (DateTimeException e) {
+      _rethrowDateTimeException(parser, context, e, string);
     }
 
     return deserialized;
@@ -61,7 +61,7 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
     return dateString == null ? null : LocalDate.parse(dateString.replaceAll("[\\/\\.\\-]", "-"), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
   }
 
-  private LocalDateTime parseArrayToDateTime(final int[] ymds) {
+  private LocalDateTime parseArrayToDateTime(final int... ymds) {
     return ymds == null ? null : ymds.length != 3 ? null : LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
   }
 }

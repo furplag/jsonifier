@@ -48,6 +48,16 @@ public class JsonifierTest {
   }
 
   @Test
+  public void test() {
+    try {
+      Jsonifier.deserialize("0.0", LocalDateTime.class);
+      fail(" @_@ !? passed.");
+    } catch (Exception e) {
+      assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
+    }
+  }
+
+  @Test
   public void Jsonifier() throws Throwable {
     assertNotNull(new Jsonifier());
   }
@@ -124,20 +134,23 @@ public class JsonifierTest {
     assertThat("Text", Jsonifier.serialize(String.join("\n", "南無阿弥陀仏".split(""))), is("\"南\\n無\\n阿\\n弥\\n陀\\n仏\""));
   }
 
-  static enum OneTwo {One, Two;};
+  static enum OneTwo {
+    One, Two;
+  };
 
   @Test
   public void serialize() throws Throwable {
     assertThat("Enum", Jsonifier.serialize(OneTwo.One), is("\"One\""));
 
-    assertThat("Array:empty", Jsonifier.serialize(new Object[]{}), is("[]"));
-    assertThat("Array:empty", Jsonifier.serialize(new Object[][]{}), is("[]"));
-    assertThat("Array", Jsonifier.serialize(new Object[]{1, 2.3f, .3456d, "789", false}), is("[1,2.3,0.3456,\"789\",false]"));
-    assertThat("Array", Jsonifier.serialize(new Object[][]{{1,2,3,4}, {.5,.6,.7,.8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}), is("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]"));
+    assertThat("Array:empty", Jsonifier.serialize(new Object[] {}), is("[]"));
+    assertThat("Array:empty", Jsonifier.serialize(new Object[][] {}), is("[]"));
+    assertThat("Array", Jsonifier.serialize(new Object[] {1, 2.3f, .3456d, "789", false}), is("[1,2.3,0.3456,\"789\",false]"));
+    assertThat("Array", Jsonifier.serialize(new Object[][] {{1, 2, 3, 4}, {.5, .6, .7, .8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}), is("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]"));
     assertThat("Set", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toCollection(LinkedHashSet::new))), is("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]"));
     assertThat("List", Jsonifier.serialize(Arrays.asList("南無阿弥陀仏".split(""))), is("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]"));
-    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s->"南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k->Integer.valueOf(k), v->"南無阿弥陀仏".substring(v, v + 1), (v1,v2)->v2))), is("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}"));
-    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s->"南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k->Integer.valueOf(k), v->"南無阿弥陀仏".substring(v, v + 1), (v1,v2)->v2)).entrySet().stream().collect(Collectors.toMap(k->k.getKey(), v->v, (v1, v2)->v2))), is("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}"));
+    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2))), is("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}"));
+    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2)).entrySet().stream().collect(Collectors.toMap(k -> k.getKey(), v -> v, (v1, v2) -> v2))),
+        is("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}"));
 
     Instance that = new Instance();
     that.versionNo = 1;
@@ -154,10 +167,10 @@ public class JsonifierTest {
     assertNull("null", Jsonifier.deserialize("[1, 2]", (TypeReference<?>) null));
     assertNull("null", Jsonifier.deserialize(null, Instance.class));
     assertNull("null", Jsonifier.deserialize(null, TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserialize(null, new TypeReference<Instance>(){}));
+    assertNull("null", Jsonifier.deserialize(null, new TypeReference<Instance>() {}));
     assertNull("null", Jsonifier.deserialize("", Instance.class));
     assertNull("null", Jsonifier.deserialize("", TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserialize("", new TypeReference<Instance>(){}));
+    assertNull("null", Jsonifier.deserialize("", new TypeReference<Instance>() {}));
     assertThat("nonField", Jsonifier.deserialize("{}", Nothing.class), is(new Nothing()));
     assertThat("unspecified", Jsonifier.deserialize("{name:'john'}", Nothing.class), is(new Nothing()));
 
@@ -197,7 +210,7 @@ public class JsonifierTest {
     those.put("deleted", false);
     those.put("created", LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
     those.put("modified", LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
-    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>(){}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
-    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>(){}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
+    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
+    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
   }
 }

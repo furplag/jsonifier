@@ -16,11 +16,13 @@
 
 package jp.furplag.util.json.deser;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.junit.Test;
@@ -30,8 +32,13 @@ public class LenientLDTDeserializerTest {
   @Test
   public void testLenientLDTDeserializer() throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     Method parseDateToDateTime = LenientLDTDeserializer.class.getDeclaredMethod("parseDateToDateTime", String.class);
-    AccessibleObject.setAccessible(new AccessibleObject[]{parseDateToDateTime}, true);
+    Method parseArrayToDateTime = LenientLDTDeserializer.class.getDeclaredMethod("parseArrayToDateTime", int[].class);
+    AccessibleObject.setAccessible(new AccessibleObject[] {parseDateToDateTime, parseArrayToDateTime}, true);
 
-    assertNull(parseDateToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[]{null}));
+    assertNull(parseDateToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[] {null}));
+    assertNull(parseArrayToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[] {null}));
+    assertNull(parseArrayToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[] {new int[] {1, 2}}));
+    assertThat(parseArrayToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[] {new int[] {1, 2, 3}}), is(LocalDateTime.of(1, 2, 3, 0, 0)));
+    assertNull(parseArrayToDateTime.invoke(new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME), new Object[] {new int[] {1, 2, 3, 4}}));
   }
 }
