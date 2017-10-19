@@ -35,6 +35,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import jp.furplag.util.json.entity.Instance;
@@ -54,6 +55,18 @@ public class JsonifierTest {
       fail(" @_@ !? passed.");
     } catch (Exception e) {
       assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
+    }
+    try {
+      Jsonifier.deserialize("'12345-1231'", LocalDateTime.class);
+      fail(" @_@ !? passed.");
+    } catch (Exception e) {
+      assertThat(InvalidFormatException.class.isAssignableFrom(e.getClass()), is(true));
+    }
+    try {
+      Jsonifier.deserialize("'0000-00-00T00:00:00Z'", LocalDateTime.class);
+      fail(" @_@ !? passed.");
+    } catch (Exception e) {
+      assertThat(InvalidFormatException.class.isAssignableFrom(e.getClass()), is(true));
     }
   }
 

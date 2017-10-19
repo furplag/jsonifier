@@ -17,10 +17,10 @@
 package jp.furplag.util.json.deser;
 
 import java.io.IOException;
-import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
@@ -50,7 +50,7 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
       } else {
         deserialized = super.deserialize(parser, context);
       }
-    } catch (DateTimeException e) {
+    } catch (DateTimeParseException e) {
       _rethrowDateTimeException(parser, context, e, string);
     }
 
