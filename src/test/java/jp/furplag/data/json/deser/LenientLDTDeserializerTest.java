@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-package jp.furplag.util.json.entity;
+package jp.furplag.data.json.deser;
 
-public class Instance extends Fields implements Entity {}
+import java.lang.reflect.InvocationTargetException;
+
+import org.junit.Test;
+
+public class LenientLDTDeserializerTest {
+
+  @Test
+  public void testLenientLDTDeserializer() throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  }
+}

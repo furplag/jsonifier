@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-package jp.furplag.util.json.entity;
+package jp.furplag.data.json.entity;
 
-public interface Entity {
+import java.util.Objects;
 
+public class Nothing implements Entity {
+
+  @Override
+  public boolean equals(Object obj) {
+    return (obj instanceof Nothing);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(this);
+  }
 }

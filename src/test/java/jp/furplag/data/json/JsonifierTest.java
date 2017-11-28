@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jp.furplag.util.json;
+package jp.furplag.data.json;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -38,8 +38,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
-import jp.furplag.util.json.entity.Instance;
-import jp.furplag.util.json.entity.Nothing;
+import jp.furplag.data.json.entity.Instance;
+import jp.furplag.data.json.entity.Nothing;
 
 public class JsonifierTest {
 
@@ -201,14 +201,16 @@ public class JsonifierTest {
     that.modified = LocalDateTime.of(2017, 1, 1, 0, 0, 0);
     assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class), is(that));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
     try {
-      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
       fail(" @_@ !? passed.");
     } catch (Exception e) {
       assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
     }
     try {
-      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
+      assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class), is(that));
       fail(" @_@ !? passed.");
     } catch (Exception e) {
       assertThat(JsonMappingException.class.isAssignableFrom(e.getClass()), is(true));
@@ -217,6 +219,7 @@ public class JsonifierTest {
     assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
     assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
     assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
 
     Map<String, Object> those = new HashMap<>();
     those.put("versionNo", 1);

@@ -14,19 +14,30 @@
  * limitations under the License.
  */
 
-package jp.furplag.util.json.entity;
+package jp.furplag.data.json.entity;
 
-import java.util.Objects;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
-public class Nothing implements Entity {
+import com.google.common.base.Objects;
+
+public abstract class Fields implements Serializable {
+
+  public int versionNo = 1;
+
+  public boolean deleted;
+
+  public LocalDateTime created;
+
+  public LocalDateTime modified;
 
   @Override
   public boolean equals(Object obj) {
-    return (obj instanceof Nothing);
+    return (obj instanceof Fields) && this.hashCode() == obj.hashCode();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(this);
+    return Objects.hashCode(versionNo, deleted, created, modified);
   }
 }

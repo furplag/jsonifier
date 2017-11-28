@@ -18,9 +18,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>jp.furplag.sandbox.java.util</groupId>
+  <groupId>jp.furplag.sandbox</groupId>
   <artifactId>jsonifier</artifactId>
-  <version>1.0.0</version>
+  <version>2.0.0-SNAPSHOT</version>
   <inceptionYear>2017</inceptionYear>
   <name>${project.artifactId}</name>
   <description>Utilities for convert between Object and JSON.</description>
@@ -53,7 +53,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>1.8</java.version>
+    <java.version>9</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <jackson.core.version>2.9.1</jackson.core.version>
@@ -185,12 +185,10 @@
             <contact>${developer.url}</contact>
           </properties>
           <excludes>
-            <exclude>**/.licenseHeader</exclude>
+            <exclude>**/.*</exclude>
             <exclude>**/LICENSE</exclude>
             <exclude>**/*.yaml</exclude>
             <exclude>**/*.yml</exclude>
-            <exclude>**/.codebeatignore</exclude>
-            <exclude>**/.editorconfig</exclude>
             <exclude>src/test/resources/**</exclude>
             <exclude>src/main/resources/**</exclude>
           </excludes>

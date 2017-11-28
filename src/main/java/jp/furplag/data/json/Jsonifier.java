@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package jp.furplag.util.json;
+package jp.furplag.data.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -36,7 +37,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
-import jp.furplag.util.json.deser.LenientLDTDeserializer;
+import jp.furplag.data.json.deser.LenientLDTDeserializer;
 
 /**
  * utilities for convert between Object and JSON.
@@ -115,10 +116,8 @@ public class Jsonifier {
    * @throws JsonMappingException
    * @throws JsonParseException
    */
-  public static <T> T deserialize(final String json, final Class<T> type) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && !json.isEmpty() && type != null) return mapper.readValue(json, type);
-
-    return null;
+  public static <T> T deserialize(final String json, final Class<T> valueType) throws JsonProcessingException, IOException {
+    return !deserializable(json, valueType) ? null : mapper.readValue(json, valueType);
   }
 
   /**
@@ -128,13 +127,10 @@ public class Jsonifier {
    * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
    * @return the instance of specified Class.
    * @throws IOException
-   * @throws JsonMappingException
-   * @throws JsonParseException
+   * @throws JsonProcessingException
    */
-  public static <T> T deserialize(final String json, final JavaType javaType) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && !json.isEmpty() && javaType != null) return mapper.readValue(json, javaType);
-
-    return null;
+  public static <T> T deserialize(final String json, final JavaType valueType) throws JsonProcessingException, IOException {
+    return !deserializable(json, valueType) ? null : mapper.readValue(json, valueType);
   }
 
   /**
@@ -144,13 +140,14 @@ public class Jsonifier {
    * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
    * @return the instance of specified Class.
    * @throws IOException
-   * @throws JsonMappingException
-   * @throws JsonParseException
+   * @throws JsonProcessingException
    */
-  public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonParseException, JsonMappingException, IOException {
-    if (json != null && !json.isEmpty() && valueTypeRef != null) return mapper.readValue(json, valueTypeRef);
+  public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonProcessingException, IOException {
+    return !deserializable(json, valueTypeRef) ? null : mapper.readValue(json, valueTypeRef);
+  }
 
-    return null;
+  private static boolean deserializable(final String json, final Object valueType) {
+    return !Objects.toString(json, "").isEmpty() && valueType != null;
   }
 
   /**
