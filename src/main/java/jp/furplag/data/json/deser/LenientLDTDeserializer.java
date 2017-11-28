@@ -24,11 +24,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -61,15 +58,29 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
   }
 
   private LocalDateTime parseDateTime(String dateTimeString) {
-    final List<Integer> ymds = Arrays.stream(Objects.toString(dateTimeString, "").trim().split("[\\D]+", 8)).filter(((Predicate<String>) String::isEmpty).negate()).map(Integer::valueOf).collect(Collectors.toList());
+    final int[] ymds = Arrays.stream(Objects.toString(dateTimeString, "").trim().split("[\\D]+", 8)).filter(((Predicate<String>) String::isEmpty).negate()).mapToInt(Integer::valueOf).toArray();
     LocalDateTime parsed = null;
-    if (ymds.size() == 1) {
-        parsed = LocalDate.parse(Integer.toString(ymds.get(0)), DATE_DIGITS).atStartOfDay();
-    } else if (IntStream.rangeClosed(3, 7).anyMatch(size -> size == ymds.size())) {
-      while (ymds.size() < 7) {
-        ymds.add(0);
-      }
-      parsed = LocalDateTime.of(ymds.get(0), ymds.get(1), ymds.get(2), ymds.get(3), ymds.get(4), ymds.get(5)).plus(ymds.get(6), ChronoUnit.MILLIS);
+    switch (ymds.length) {
+      case 1:
+        parsed = LocalDate.parse(Integer.toString(ymds[0]), DATE_DIGITS).atStartOfDay();
+        break;
+      case 3:
+        parsed = LocalDate.of(ymds[0], ymds[1], ymds[2]).atStartOfDay();
+        break;
+      case 4:
+        parsed = LocalDateTime.of(ymds[0], ymds[1], ymds[2], ymds[3], 0);
+        break;
+      case 5:
+        parsed = LocalDateTime.of(ymds[0], ymds[1], ymds[2], ymds[3], ymds[4]);
+        break;
+      case 6:
+        parsed = LocalDateTime.of(ymds[0], ymds[1], ymds[2], ymds[3], ymds[4], ymds[5]);
+        break;
+      case 7:
+        parsed = LocalDateTime.of(ymds[0], ymds[1], ymds[2], ymds[3], ymds[4], ymds[5]).plus(ymds[6], ChronoUnit.MILLIS);
+        break;
+      default:
+        break;
     }
 
     return parsed;
