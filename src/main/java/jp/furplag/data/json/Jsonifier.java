@@ -18,7 +18,6 @@ package jp.furplag.data.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -58,8 +57,7 @@ public class Jsonifier {
       .registerModules(
         new ParameterNamesModule()
       , new Jdk8Module()
-      , new JavaTimeModule()
-        .addDeserializer(LocalDateTime.class, new LenientLDTDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+      , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LenientLDTDeserializer())
       )
       .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 

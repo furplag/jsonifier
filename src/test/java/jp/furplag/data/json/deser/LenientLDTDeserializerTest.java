@@ -16,13 +16,46 @@
 
 package jp.furplag.data.json.deser;
 
-import java.lang.reflect.InvocationTargetException;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
 
 import org.junit.Test;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 public class LenientLDTDeserializerTest {
 
   @Test
-  public void testLenientLDTDeserializer() throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  public void testLenientLDTDeserializer() throws JsonMappingException, IOException {
+    ObjectMapper objectMapper = new ObjectMapper().registerModules(
+      new ParameterNamesModule()
+    , new Jdk8Module()
+    , new JavaTimeModule()
+      .addDeserializer(LocalDateTime.class, new LenientLDTDeserializer())
+    );
+    assertThat(objectMapper.readValue("\"0123\"", LocalDateTime.class), is((LocalDateTime) null));
+    assertThat(objectMapper.readValue("\"01-23\"", LocalDateTime.class), is((LocalDateTime) null));
+    assertThat(objectMapper.readValue("\"01234567\"", LocalDateTime.class), is(LocalDateTime.of(126, 11, 6, 0, 0)));
+    assertThat(objectMapper.readValue("\"2017-01-01T01:23:45.678\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 1, 23, 45, 678 * 1000000)));
+    assertThat(objectMapper.readValue("\"2017-01-01\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 0, 0)));
+    assertThat(objectMapper.readValue("\"2017-01-01T12:34:56.789+9\"", LocalDateTime.class), is((LocalDateTime) null));
+    assertThat(objectMapper.readValue("\"2017-01-01T9\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 9, 0)));
+    assertThat(objectMapper.readValue("\"2017-01-01T12:34\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34)));
+    assertThat(objectMapper.readValue("\"2017-01-01T12:34:56\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56)));
+    assertThat(objectMapper.readValue("\"2017-01-01T12:34:56.789\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56, 789 * 1000000)));
+
+    assertThat(objectMapper.readValue("\"2017/01/01\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 0, 0)));
+    assertThat(objectMapper.readValue("\"2017/01/01 12:34:56.789+9\"", LocalDateTime.class), is((LocalDateTime) null));
+    assertThat(objectMapper.readValue("\"2017/01/01 9\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 9, 0)));
+    assertThat(objectMapper.readValue("\"2017/01/01 12:34\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34)));
+    assertThat(objectMapper.readValue("\"2017/01/01 12:34:56\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56)));
+    assertThat(objectMapper.readValue("\"2017/01/01 12:34:56.789\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56, 789 * 1000000)));
   }
 }

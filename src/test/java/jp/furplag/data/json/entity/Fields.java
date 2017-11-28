@@ -18,6 +18,7 @@ package jp.furplag.data.json.entity;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.StringJoiner;
 
 import com.google.common.base.Objects;
 
@@ -39,5 +40,15 @@ public abstract class Fields implements Serializable {
   @Override
   public int hashCode() {
     return Objects.hashCode(versionNo, deleted, created, modified);
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", "{ ", "}")
+      .add("versionNo=" + versionNo)
+      .add("deleted=" + deleted)
+      .add("created=" + created)
+      .add("modified=" + modified)
+      .toString();
   }
 }
