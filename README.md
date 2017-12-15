@@ -26,9 +26,9 @@ Add the following snippet to any project's pom that depends on your project
 <dependencies>
   ...
   <dependency>
-    <groupId>jp.furplag.sandbox.java.util</groupId>
+    <groupId>jp.furplag.sandbox</groupId>
     <artifactId>jsonifier</artifactId>
-    <version>[1.0,)</version>
+    <version>2.0.0</version>
   </dependency>
 </dependencies>
 ```
