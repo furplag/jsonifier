@@ -59,6 +59,19 @@
     <jackson.core.version>2.9.1</jackson.core.version>
   </properties>
 
+  <repositories>
+
+    <repository>
+      <id>jp.furplag.sandbox.savage-reflections</id>
+      <url>https://raw.github.com/furplag/savage-reflections/mvn-repo/</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+    </repository>
+
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -66,6 +79,14 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>jp.furplag.sandbox</groupId>
+      <artifactId>savage-reflections</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
