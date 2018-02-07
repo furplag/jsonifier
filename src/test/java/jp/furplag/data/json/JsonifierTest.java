@@ -38,10 +38,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import jp.furplag.data.json.entity.Instance;
 import jp.furplag.data.json.entity.Nothing;
+import jp.furplag.reflect.SavageReflection;
 
 public class JsonifierTest {
 
@@ -210,6 +213,7 @@ public class JsonifierTest {
     assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
   }
 
+  @SuppressWarnings("unused")
   @Test
   public void lazy() throws Throwable {
     assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (Class<?>) null));
@@ -284,6 +288,20 @@ public class JsonifierTest {
     assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class), is((Another) null));
     assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class)), is((Another) null));
     assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {}), is((Another) null));
-  }
 
+    ObjectMapper mapper = ((ObjectMapper) SavageReflection.get(Jsonifier.class, "mapper"));
+    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
+    SavageReflection.set(Jsonifier.class, "mapper", mapper);
+    try {
+      Jsonifier.serialize(new Nothing());
+      fail("raise JsonMappingException .");
+    } catch (JsonMappingException e) {
+      assertThat(e instanceof JsonMappingException, is(true));
+    }
+    assertThat("lazySerialization", Jsonifier.serializeLazy(new Nothing()), is((Nothing) null));
+    assertThat("lazySerialization", Jsonifier.serializeLazy(new Instance()), is(Jsonifier.serialize(new Instance())));
+
+    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+    SavageReflection.set(Jsonifier.class, "mapper", mapper);
+  }
 }

@@ -102,6 +102,20 @@ public class Jsonifier {
   }
 
   /**
+   * stringify specified object. returns null if that has failed.
+   *
+   * @param source an Object, may be null.
+   * @return JSON String.
+   */
+  public static String serializeLazy(final Object source) {
+    try {
+      return serialize(source);
+    } catch (IOException e) {}
+
+    return null;
+  }
+
+  /**
    * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
    * @param <T> the type which you want to get .
