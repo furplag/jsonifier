@@ -32,6 +32,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 
+/**
+ * lazy deserialization for {@link java.time.LocalDateTime} .
+ *
+ * @author furplag
+ *
+ */
 public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
 
   private static final DateTimeFormatter DATE_DIGITS;
@@ -43,6 +49,9 @@ public class LenientLDTDeserializer extends LocalDateTimeDeserializer {
     super(DateTimeFormatter.ISO_LOCAL_DATE_TIME.withResolverStyle(ResolverStyle.LENIENT));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
     LocalDateTime deserialized = null;

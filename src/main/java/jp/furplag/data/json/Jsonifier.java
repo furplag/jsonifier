@@ -22,13 +22,11 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -97,8 +95,7 @@ public class Jsonifier {
    *
    * @param source an Object, may be null.
    * @return JSON String.
-   * @throws JsonProcessingException
-   * @throws Throwable
+   * @throws JsonProcessingException if that has failed
    */
   public static String serialize(final Object source) throws JsonProcessingException {
     return source == null ? null : mapper.writeValueAsString(source);
@@ -107,12 +104,12 @@ public class Jsonifier {
   /**
    * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
+   * @param <T> the type which you want to get .
    * @param json JSON String.
-   * @param type destination Class.
+   * @param valueType destination Class.
    * @return the instance of specified Class.
-   * @throws IOException
-   * @throws JsonMappingException
-   * @throws JsonParseException
+   * @throws JsonProcessingException if that has failed
+   * @throws IOException if that has failed
    */
   public static <T> T deserialize(final String json, final Class<T> valueType) throws JsonProcessingException, IOException {
     return !deserializable(json, valueType) ? null : mapper.readValue(json, valueType);
@@ -121,24 +118,26 @@ public class Jsonifier {
   /**
    * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
+   * @param <T> the type which you want to get .
    * @param json JSON String.
    * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
    * @return the instance of specified Class.
-   * @throws IOException
-   * @throws JsonProcessingException
+   * @throws JsonProcessingException if that has failed
+   * @throws IOException if that has failed
    */
-  public static <T> T deserialize(final String json, final JavaType valueType) throws JsonProcessingException, IOException {
-    return !deserializable(json, valueType) ? null : mapper.readValue(json, valueType);
+  public static <T> T deserialize(final String json, final JavaType javaType) throws JsonProcessingException, IOException {
+    return !deserializable(json, javaType) ? null : mapper.readValue(json, javaType);
   }
 
   /**
    * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
    *
+   * @param <T> the type which you want to get .
    * @param json JSON String.
    * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
    * @return the instance of specified Class.
-   * @throws IOException
-   * @throws JsonProcessingException
+   * @throws JsonProcessingException if that has failed
+   * @throws IOException if that has failed
    */
   public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonProcessingException, IOException {
     return !deserializable(json, valueTypeRef) ? null : mapper.readValue(json, valueTypeRef);
@@ -146,6 +145,60 @@ public class Jsonifier {
 
   private static boolean deserializable(final String json, final Object valueType) {
     return !Objects.toString(json, "").isEmpty() && valueType != null;
+  }
+
+  /**
+   * create the instance of specified class represented by the JSON String. returns null if that has failed.
+   *
+   * @param <T> the type which you want to get .
+   * @param json JSON String.
+   * @param valueType destination Class.
+   * @return the instance of specified Class.
+   *
+   * @since 2.1.0
+   */
+  public static <T> T deserializeLazy(final String json, final Class<T> valueType) {
+    try {
+      return Jsonifier.deserialize(json, valueType);
+    } catch (IOException e) {}
+
+    return null;
+  }
+
+  /**
+   * create the instance of specified class represented by the JSON String. returns null if that has failed.
+   *
+   * @param <T> the type which you want to get .
+   * @param json JSON String.
+   * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
+   * @return the instance of specified Class.
+   *
+   * @since 2.1.0
+   */
+  public static <T> T deserializeLazy(final String json, final JavaType javaType) {
+    try {
+      return Jsonifier.deserialize(json, javaType);
+    } catch (IOException e) {}
+
+    return null;
+  }
+
+  /**
+   * create the instance of specified class represented by the JSON String. returns null if that has failed.
+   *
+   * @param <T> the type which you want to get .
+   * @param json JSON String.
+   * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
+   * @return the instance of specified Class.
+   *
+   * @since 2.1.0
+   */
+  public static <T> T deserializeLazy(final String json, final TypeReference<T> valueTypeRef) {
+    try {
+      return Jsonifier.deserialize(json, valueTypeRef);
+    } catch (IOException e) {}
+
+    return null;
   }
 
   /**

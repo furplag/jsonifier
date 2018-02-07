@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import jp.furplag.data.json.entity.Instance;
@@ -207,4 +209,81 @@ public class JsonifierTest {
     assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
     assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
   }
+
+  @Test
+  public void lazy() throws Throwable {
+    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (Class<?>) null));
+    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (JavaType) null));
+    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (TypeReference<?>) null));
+    assertNull("null", Jsonifier.deserializeLazy(null, Instance.class));
+    assertNull("null", Jsonifier.deserializeLazy(null, TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull("null", Jsonifier.deserializeLazy(null, new TypeReference<Instance>() {}));
+    assertNull("null", Jsonifier.deserializeLazy("", Instance.class));
+    assertNull("null", Jsonifier.deserializeLazy("", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull("null", Jsonifier.deserializeLazy("", new TypeReference<Instance>() {}));
+    assertThat("nonField", Jsonifier.deserializeLazy("{}", Nothing.class), is(new Nothing()));
+    assertThat("unspecified", Jsonifier.deserializeLazy("{name:'john'}", Nothing.class), is(new Nothing()));
+
+    Instance that = new Instance();
+    that.versionNo = 1;
+    that.deleted = false;
+    that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
+    that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 1, 0, 0, 0);
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+    that.modified = null;
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(201 + (71 / 12), 71 % 12, 23, 0, 0);
+    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class), is(that));
+    that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
+    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+
+    Map<String, Object> those = new HashMap<>();
+    those.put("versionNo", 1);
+    those.put("deleted", false);
+    those.put("created", LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
+    those.put("modified", LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
+    assertThat("that:TypeReference", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
+    assertThat("that:TypeReference", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
+
+    final class Another extends Instance {
+      @SuppressWarnings("unused")
+      public boolean created;
+    }
+    try {
+      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class);
+      fail("raise JsonMappingException .");
+    } catch (JsonMappingException e) {
+      assertThat(e instanceof JsonMappingException, is(true));
+    }
+    try {
+      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class));
+      fail("raise JsonMappingException .");
+    } catch (JsonMappingException e) {
+      assertThat(e instanceof JsonMappingException, is(true));
+    }
+    try {
+      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {});
+      fail("raise JsonMappingException .");
+    } catch (JsonMappingException e) {
+      assertThat(e instanceof JsonMappingException, is(true));
+    }
+    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class), is((Another) null));
+    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class)), is((Another) null));
+    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {}), is((Another) null));
+  }
+
 }
