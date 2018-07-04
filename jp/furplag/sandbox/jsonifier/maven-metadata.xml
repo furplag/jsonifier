@@ -3,10 +3,9 @@
   <groupId>jp.furplag.sandbox</groupId>
   <artifactId>jsonifier</artifactId>
   <versioning>
-    <release>2.1.0</release>
     <versions>
-      <version>2.1.0</version>
+      <version>3.0.0-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20180207091549</lastUpdated>
+    <lastUpdated>20180704071712</lastUpdated>
   </versioning>
 </metadata>
