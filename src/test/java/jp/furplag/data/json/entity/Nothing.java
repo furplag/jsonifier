@@ -16,17 +16,10 @@
 
 package jp.furplag.data.json.entity;
 
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
+@EqualsAndHashCode
+@ToString
 public class Nothing implements Entity {
-
-  @Override
-  public boolean equals(Object obj) {
-    return (obj instanceof Nothing);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(this);
-  }
 }

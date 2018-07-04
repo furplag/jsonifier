@@ -18,10 +18,12 @@ package jp.furplag.data.json.entity;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.StringJoiner;
 
-import com.google.common.base.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
+@EqualsAndHashCode
+@ToString
 public abstract class Fields implements Serializable {
 
   public int versionNo = 1;
@@ -31,24 +33,4 @@ public abstract class Fields implements Serializable {
   public LocalDateTime created;
 
   public LocalDateTime modified;
-
-  @Override
-  public boolean equals(Object obj) {
-    return (obj instanceof Fields) && this.hashCode() == obj.hashCode();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(versionNo, deleted, created, modified);
-  }
-
-  @Override
-  public String toString() {
-    return new StringJoiner(", ", "{ ", "}")
-      .add("versionNo=" + versionNo)
-      .add("deleted=" + deleted)
-      .add("created=" + created)
-      .add("modified=" + modified)
-      .toString();
-  }
 }

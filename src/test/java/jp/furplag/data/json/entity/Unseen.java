@@ -16,9 +16,13 @@
 
 package jp.furplag.data.json.entity;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import java.util.Arrays;
+import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
-public class Instance extends Fields implements Entity {}
+@SuppressWarnings("unused")
+public final class Unseen {
+
+  private final int theInt = 123;
+
+  private final List<String> theString = Arrays.asList("南無阿弥陀仏".split(""));
+}

@@ -16,10 +16,10 @@
 
 package jp.furplag.data.json;
 
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,97 +45,110 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import jp.furplag.data.json.entity.Instance;
 import jp.furplag.data.json.entity.Nothing;
-import jp.furplag.reflect.SavageReflection;
+import jp.furplag.data.json.entity.Unseen;
+import jp.furplag.function.Trebuchet;
+import jp.furplag.function.Trebuchet.ThrowableFunction;
+import jp.furplag.sandbox.reflect.SavageReflection;
 
 public class JsonifierTest {
+
+  private String lineSeparator = System.getProperty("line.separator");
 
   @Before
   public void before() {
     System.setProperty("line.separator", "\n");
   }
 
+  @After
+  public void after() {
+    System.setProperty("line.separator", lineSeparator);
+  }
+
   @Test
   public void test() throws JsonProcessingException, IOException {
-    assertThat(Jsonifier.deserialize("0.0", LocalDateTime.class), is((LocalDateTime) null));
-    assertThat(Jsonifier.deserialize("'12345-1231'", LocalDateTime.class), is((LocalDateTime) null));
-    assertThat(Jsonifier.deserialize("'0000-00-00T00:00:00Z'", LocalDateTime.class), is((LocalDateTime) null));
+    assertNull(Jsonifier.deserializeStrictly("0.0", LocalDateTime.class));
+    assertNull(Jsonifier.deserializeStrictly("'12345-1231'", LocalDateTime.class));
   }
 
   @Test
   public void Jsonifier() throws Throwable {
-    assertNotNull(new Jsonifier());
+    assertNotNull(new Jsonifier() {});
+
+    Constructor<?> c = Jsonifier.Shell.class.getDeclaredConstructor();
+    c.setAccessible(true);
+    assertTrue(c.newInstance() instanceof Jsonifier.Shell);
   }
 
   @Test
   public void serializeNull() throws Throwable {
-    assertNull("null", Jsonifier.serialize(null));
+    assertNull("null", Jsonifier.serializeStrictly(null));
   }
 
   @Test
   public void serializePrimitives() throws Throwable {
-    assertThat("boolean", Jsonifier.serialize(true), is("true"));
-    assertThat("boolean", Jsonifier.serialize(!true), is("false"));
+    assertEquals("true", Jsonifier.serializeStrictly(true));
+    assertEquals("false", Jsonifier.serializeStrictly(!true));
 
-    assertEquals("char", "\"諸\"", Jsonifier.serialize("諸行無常".charAt(0)));
+    assertEquals("\"諸\"", Jsonifier.serializeStrictly("諸行無常".charAt(0)));
   }
 
   @Test
   public void serializeIntegers() throws Throwable {
-    assertThat("byte", Jsonifier.serialize(Byte.MIN_VALUE), is("-128"));
-    assertThat("byte", Jsonifier.serialize((byte) 0), is("0"));
-    assertThat("byte", Jsonifier.serialize(Byte.MAX_VALUE), is("127"));
+    assertEquals("-128", Jsonifier.serializeStrictly(Byte.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly((byte) 0));
+    assertEquals("127", Jsonifier.serializeStrictly(Byte.MAX_VALUE));
 
-    assertThat("short", Jsonifier.serialize(Short.MIN_VALUE), is("-32768"));
-    assertThat("short", Jsonifier.serialize((short) 0), is("0"));
-    assertThat("short", Jsonifier.serialize(Short.MAX_VALUE), is("32767"));
+    assertEquals("-32768", Jsonifier.serializeStrictly(Short.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly((short) 0));
+    assertEquals("32767", Jsonifier.serializeStrictly(Short.MAX_VALUE));
 
-    assertThat("int", Jsonifier.serialize(Integer.MIN_VALUE), is("-2147483648"));
-    assertThat("int", Jsonifier.serialize(0), is("0"));
-    assertThat("int", Jsonifier.serialize(Integer.MAX_VALUE), is("2147483647"));
+    assertEquals("-2147483648", Jsonifier.serializeStrictly(Integer.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly(0));
+    assertEquals("2147483647", Jsonifier.serializeStrictly(Integer.MAX_VALUE));
 
-    assertThat("long", Jsonifier.serialize(Long.MIN_VALUE), is("-9223372036854775808"));
-    assertThat("long", Jsonifier.serialize(0L), is("0"));
-    assertThat("long", Jsonifier.serialize(Long.MAX_VALUE), is("9223372036854775807"));
+    assertEquals("-9223372036854775808", Jsonifier.serializeStrictly(Long.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly(0L));
+    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(Long.MAX_VALUE));
 
-    assertThat("Byte", Jsonifier.serialize(Byte.valueOf("123")), is("123"));
-    assertThat("Short", Jsonifier.serialize(Short.valueOf("1234")), is("1234"));
-    assertThat("Integer", Jsonifier.serialize(Integer.valueOf("123456")), is("123456"));
-    assertThat("Long", Jsonifier.serialize(Long.valueOf("12345678901")), is("12345678901"));
-    assertThat("BigInteger", Jsonifier.serialize(BigInteger.valueOf(Long.MAX_VALUE)), is("9223372036854775807"));
+    assertEquals("123", Jsonifier.serializeStrictly(Byte.valueOf("123")));
+    assertEquals("1234", Jsonifier.serializeStrictly(Short.valueOf("1234")));
+    assertEquals("123456", Jsonifier.serializeStrictly(Integer.valueOf("123456")));
+    assertEquals("12345678901", Jsonifier.serializeStrictly(Long.valueOf("12345678901")));
+    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(BigInteger.valueOf(Long.MAX_VALUE)));
   }
 
   @Test
   public void serializeFractions() throws Throwable {
-    assertThat("Float", "-0.123456", is(Jsonifier.serialize(-.123456f)));
-    assertThat("Float", "0.0", is(Jsonifier.serialize(0f)));
-    assertThat("Float", "0.0", is(Jsonifier.serialize(0.0f)));
-    assertThat("Float", "0.0", is(Jsonifier.serialize(.0f)));
-    assertThat("Float", "1.0E-6", is(Jsonifier.serialize(1E-6f)));
-    assertThat("Float", "0.123456", is(Jsonifier.serialize(.123456f)));
+    assertEquals(Jsonifier.serializeStrictly(-.123456f), "-0.123456");
+    assertEquals(Jsonifier.serializeStrictly(0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(0.0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(.0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(1E-6f), "1.0E-6");
+    assertEquals(Jsonifier.serializeStrictly(.123456f), "0.123456");
 
-    assertThat("Double", "-0.1234567890123", is(Jsonifier.serialize(-.1234567890123d)));
-    assertThat("Double", "0.0", is(Jsonifier.serialize(0d)));
-    assertThat("Double", "0.0", is(Jsonifier.serialize(0.0d)));
-    assertThat("Double", "0.0", is(Jsonifier.serialize(.0d)));
-    assertThat("Double", "1.0E-12", is(Jsonifier.serialize(1E-12d)));
-    assertThat("Double", "0.1234567890123", is(Jsonifier.serialize(.1234567890123d)));
+    assertEquals(Jsonifier.serializeStrictly(-.1234567890123d), "-0.1234567890123");
+    assertEquals(Jsonifier.serializeStrictly(0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(0.0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(.0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(1E-12d), "1.0E-12");
+    assertEquals(Jsonifier.serializeStrictly(.1234567890123d), "0.1234567890123");
 
-    assertThat("BigDecimal", "1.7976931348623157E308", is(Jsonifier.serialize(Double.valueOf(Double.MAX_VALUE))));
+    assertEquals(Jsonifier.serializeStrictly(Double.valueOf(Double.MAX_VALUE)), "1.7976931348623157E308");
   }
 
   @Test
   public void serializeWrappers() throws Throwable {
-    assertThat("Boolean", Jsonifier.serialize(Boolean.TRUE), is("true"));
-    assertThat("Boolean", Jsonifier.serialize(Boolean.FALSE), is("false"));
+    assertEquals("true", Jsonifier.serializeStrictly(Boolean.TRUE));
+    assertEquals("false", Jsonifier.serializeStrictly(Boolean.FALSE));
 
-    assertEquals("Character", "\"諸\"", Jsonifier.serialize(Character.valueOf("諸行無常".charAt(0))));
+    assertEquals("\"諸\"", Jsonifier.serializeStrictly(Character.valueOf("諸行無常".charAt(0))));
   }
 
   @Test
   public void serializeStrings() throws Throwable {
-    assertThat("empty", Jsonifier.serialize(""), is("\"\""));
-    assertThat("String", Jsonifier.serialize("南無阿弥陀仏"), is("\"南無阿弥陀仏\""));
-    assertThat("Text", Jsonifier.serialize(String.join("\n", "南無阿弥陀仏".split(""))), is("\"南\\n無\\n阿\\n弥\\n陀\\n仏\""));
+    assertEquals("\"\"", Jsonifier.serializeStrictly(""));
+    assertEquals("\"南無阿弥陀仏\"", Jsonifier.serializeStrictly("南無阿弥陀仏"));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly("南無阿弥陀仏".split("")));
   }
 
   static enum OneTwo {
@@ -143,165 +157,165 @@ public class JsonifierTest {
 
   @Test
   public void serialize() throws Throwable {
-    assertThat("Enum", Jsonifier.serialize(OneTwo.One), is("\"One\""));
+    assertEquals("\"One\"", Jsonifier.serializeStrictly(OneTwo.One));
 
-    assertThat("Array:empty", Jsonifier.serialize(new Object[] {}), is("[]"));
-    assertThat("Array:empty", Jsonifier.serialize(new Object[][] {}), is("[]"));
-    assertThat("Array", Jsonifier.serialize(new Object[] {1, 2.3f, .3456d, "789", false}), is("[1,2.3,0.3456,\"789\",false]"));
-    assertThat("Array", Jsonifier.serialize(new Object[][] {{1, 2, 3, 4}, {.5, .6, .7, .8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}), is("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]"));
-    assertThat("Set", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toCollection(LinkedHashSet::new))), is("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]"));
-    assertThat("List", Jsonifier.serialize(Arrays.asList("南無阿弥陀仏".split(""))), is("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]"));
-    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2))), is("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}"));
-    assertThat("Map", Jsonifier.serialize(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2)).entrySet().stream().collect(Collectors.toMap(k -> k.getKey(), v -> v, (v1, v2) -> v2))),
-        is("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}"));
+    assertEquals("[]", Jsonifier.serializeStrictly(new Object[] {}));
+    assertEquals("[]", Jsonifier.serializeStrictly(new Object[][] {}));
+    assertEquals("[1,2.3,0.3456,\"789\",false]", Jsonifier.serializeStrictly(new Object[] {1, 2.3f, .3456d, "789", false}));
+    assertEquals("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]", Jsonifier.serializeStrictly(new Object[][] {{1, 2, 3, 4}, {.5, .6, .7, .8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toCollection(LinkedHashSet::new))));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.asList("南無阿弥陀仏".split(""))));
+    assertEquals("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2))));
+    assertEquals("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2)).entrySet().stream().collect(Collectors.toMap(k -> k.getKey(), v -> v, (v1, v2) -> v2))));
 
     Instance that = new Instance();
     that.versionNo = 1;
     that.deleted = false;
     that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
     that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
-    assertThat("that", Jsonifier.serialize(that), is("{\"versionNo\":1,\"deleted\":false,\"created\":\"2017-01-01T01:23:45.678\",\"modified\":\"2017-01-23T01:23:45.678\"}"));
+    assertEquals("{\"versionNo\":1,\"deleted\":false,\"created\":\"2017-01-01T01:23:45.678\",\"modified\":\"2017-01-23T01:23:45.678\"}", Jsonifier.serializeStrictly(that));
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void deserialize() throws Throwable {
-    assertNull("null", Jsonifier.deserialize("[1, 2]", (Class<?>) null));
-    assertNull("null", Jsonifier.deserialize("[1, 2]", (JavaType) null));
-    assertNull("null", Jsonifier.deserialize("[1, 2]", (TypeReference<?>) null));
-    assertNull("null", Jsonifier.deserialize(null, Instance.class));
-    assertNull("null", Jsonifier.deserialize(null, TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserialize(null, new TypeReference<Instance>() {}));
-    assertNull("null", Jsonifier.deserialize("", Instance.class));
-    assertNull("null", Jsonifier.deserialize("", TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserialize("", new TypeReference<Instance>() {}));
-    assertThat("nonField", Jsonifier.deserialize("{}", Nothing.class), is(new Nothing()));
-    assertThat("unspecified", Jsonifier.deserialize("{name:'john'}", Nothing.class), is(new Nothing()));
+    assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{}", Nothing.class));
+    assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{name:'john'}", Nothing.class));
 
     Instance that = new Instance();
     that.versionNo = 1;
     that.deleted = false;
     that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
     that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 1, 0, 0, 0);
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class));
     that.modified = null;
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class));
     that.modified = LocalDateTime.of(201 + (71 / 12), 71 % 12, 23, 0, 0);
-    assertThat("that", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)));
 
     Map<String, Object> those = new HashMap<>();
     those.put("versionNo", 1);
     those.put("deleted", false);
     those.put("created", LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
     those.put("modified", LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
-    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
-    assertThat("that:TypeReference", Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
+    assertEquals(those.keySet().stream().sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).keySet().stream().sorted().collect(Collectors.joining()));
+    assertEquals(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()));
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings({ "unused", "unchecked" })
   @Test
   public void lazy() throws Throwable {
-    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (Class<?>) null));
-    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (JavaType) null));
-    assertNull("null", Jsonifier.deserializeLazy("[1, 2]", (TypeReference<?>) null));
-    assertNull("null", Jsonifier.deserializeLazy(null, Instance.class));
-    assertNull("null", Jsonifier.deserializeLazy(null, TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserializeLazy(null, new TypeReference<Instance>() {}));
-    assertNull("null", Jsonifier.deserializeLazy("", Instance.class));
-    assertNull("null", Jsonifier.deserializeLazy("", TypeFactory.defaultInstance().constructType(Instance.class)));
-    assertNull("null", Jsonifier.deserializeLazy("", new TypeReference<Instance>() {}));
-    assertThat("nonField", Jsonifier.deserializeLazy("{}", Nothing.class), is(new Nothing()));
-    assertThat("unspecified", Jsonifier.deserializeLazy("{name:'john'}", Nothing.class), is(new Nothing()));
+    assertNull(Jsonifier.deserialize("[1, 2]", (Class<?>) null));
+    assertNull(Jsonifier.deserialize("[1, 2]", (JavaType) null));
+    assertNull(Jsonifier.deserialize("[1, 2]", (TypeReference<?>) null));
+    assertNull(Jsonifier.deserialize(null, Instance.class));
+    assertNull(Jsonifier.deserialize(null, TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull(Jsonifier.deserialize(null, new TypeReference<Instance>() {}));
+    assertNull(Jsonifier.deserialize("", Instance.class));
+    assertNull(Jsonifier.deserialize("", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertNull(Jsonifier.deserialize("", new TypeReference<Instance>() {}));
+    assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{name:'john'}", Nothing.class));
+    assertEquals(new Nothing(), Jsonifier.deserialize("{name:'john'}", Nothing.class));
 
     Instance that = new Instance();
     that.versionNo = 1;
     that.deleted = false;
     that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
     that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", Instance.class));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", Instance.class));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", Instance.class));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 1, 0, 0, 0);
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.1.1'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017年1月23日'}", Instance.class));
     that.modified = null;
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '元禄元年.1.1'}", Instance.class));
     that.modified = LocalDateTime.of(201 + (71 / 12), 71 % 12, 23, 0, 0);
-    assertThat("that", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017123'}", Instance.class));
     that.modified = LocalDateTime.of(2017, 1, 23, 0, 0, 0);
-    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
-    assertThat("that:JavaType", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)), is(that));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017/01/23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017.01.23'}", TypeFactory.defaultInstance().constructType(Instance.class)));
+    assertEquals(that, Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '20170123'}", TypeFactory.defaultInstance().constructType(Instance.class)));
 
     Map<String, Object> those = new HashMap<>();
     those.put("versionNo", 1);
     those.put("deleted", false);
     those.put("created", LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
     those.put("modified", LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS));
-    assertThat("that:TypeReference", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).keySet().stream().sorted().collect(Collectors.joining()), is(those.keySet().stream().sorted().collect(Collectors.joining())));
-    assertThat("that:TypeReference", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), is(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining())));
+    assertEquals(those.keySet().stream().sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).keySet().stream().sorted().collect(Collectors.joining()));
+    assertEquals(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()));
 
     final class Another extends Instance {
-      @SuppressWarnings("unused")
       public boolean created;
     }
     try {
-      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class);
+      Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class);
       fail("raise JsonMappingException .");
     } catch (JsonMappingException e) {
-      assertThat(e instanceof JsonMappingException, is(true));
+      assertTrue(e instanceof JsonMappingException);
     }
     try {
-      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class));
+      Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class));
       fail("raise JsonMappingException .");
     } catch (JsonMappingException e) {
-      assertThat(e instanceof JsonMappingException, is(true));
+      assertTrue(e instanceof JsonMappingException);
     }
     try {
-      Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {});
+      Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {});
       fail("raise JsonMappingException .");
     } catch (JsonMappingException e) {
-      assertThat(e instanceof JsonMappingException, is(true));
+      assertTrue(e instanceof JsonMappingException);
     }
-    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class), is((Another) null));
-    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class)), is((Another) null));
-    assertThat("thatToAnother", Jsonifier.deserializeLazy("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {}), is((Another) null));
+    assertNull(Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", Another.class));
+    assertNull(Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", TypeFactory.defaultInstance().constructType(Another.class)));
+    assertNull(Jsonifier.deserialize("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Set<Integer>>() {}));
 
-    ObjectMapper mapper = ((ObjectMapper) SavageReflection.get(Jsonifier.class, "mapper"));
+    ObjectMapper mapper = ((ObjectMapper) SavageReflection.get(Jsonifier.Shell.class, "mapper"));
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
     SavageReflection.set(Jsonifier.class, "mapper", mapper);
     try {
-      Jsonifier.serialize(new Nothing());
+      Jsonifier.serializeStrictly(new Nothing());
       fail("raise JsonMappingException .");
     } catch (JsonMappingException e) {
-      assertThat(e instanceof JsonMappingException, is(true));
+      assertTrue(e instanceof JsonMappingException);
     }
-    assertThat("lazySerialization", Jsonifier.serializeLazy(new Nothing()), is((Nothing) null));
-    assertThat("lazySerialization", Jsonifier.serializeLazy(new Instance()), is(Jsonifier.serialize(new Instance())));
+    assertNull(Jsonifier.serialize(new Nothing()));
+    assertEquals(Jsonifier.serializeStrictly(new Instance()), Jsonifier.serialize(new Instance()));
+
+    final String expect = Trebuchet.orElse((ThrowableFunction<Object, String>) (x) -> Jsonifier.serializeStrictly(new Nothing()), (ex, e) -> String.format("{\"jsonifier.serializationFailure\":{\"error\":\"%s\",\"message\":\"%s\"}}", ex.getClass().getName(), ex.getMessage())).apply(null);
+    assertEquals(expect, Jsonifier.serializeOrFailure(new Nothing()));
 
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     SavageReflection.set(Jsonifier.class, "mapper", mapper);
+  }
+
+  @Test
+  public void testBrutaly() throws JsonProcessingException {
+    assertEquals("{}", Jsonifier.serialize(new Unseen()));
+    assertEquals("{}", Jsonifier.serializeStrictly(new Unseen()));
+    assertEquals("{\"theInt\":123,\"theString\":[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]}", Jsonifier.serializeBrutaly(new Unseen()));
   }
 }

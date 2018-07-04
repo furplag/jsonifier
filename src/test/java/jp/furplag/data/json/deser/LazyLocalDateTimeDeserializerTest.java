@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package jp.furplag.data.json.deser;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -24,22 +23,36 @@ import java.time.LocalDateTime;
 
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
-public class LenientLDTDeserializerTest {
+public class LazyLocalDateTimeDeserializerTest {
+
+  @Test(expected = com.fasterxml.jackson.databind.exc.InvalidDefinitionException.class)
+  public void testNonCustomized() throws JsonProcessingException, IOException {
+    new ObjectMapper().readValue("\"2017-01-01\"", LocalDateTime.class);
+  }
 
   @Test
-  public void testLenientLDTDeserializer() throws JsonMappingException, IOException {
-    ObjectMapper objectMapper = new ObjectMapper().registerModules(
+  public void test() throws JsonProcessingException, IOException {
+    // @formatter:off
+    final ObjectMapper objectMapper = new ObjectMapper().registerModules(
       new ParameterNamesModule()
     , new Jdk8Module()
-    , new JavaTimeModule()
-      .addDeserializer(LocalDateTime.class, new LenientLDTDeserializer())
+    , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
     );
+    // @formatter:on
+
+    assertNull(objectMapper.readValue((String) "\"\"", LocalDateTime.class));
+    assertNull(objectMapper.readValue((String) "\"1\"", LocalDateTime.class));
+    assertNull(objectMapper.readValue((String) "\"南無阿弥陀仏\"", LocalDateTime.class));
+    assertNull(objectMapper.readValue((String) "\"123\"", LocalDateTime.class));
+    assertNull(objectMapper.readValue((String) "\"1234\"", LocalDateTime.class));
+    assertNull(objectMapper.readValue((String) "\"12345678901234567890\"", LocalDateTime.class));
+
     assertThat(objectMapper.readValue("\"0123\"", LocalDateTime.class), is((LocalDateTime) null));
     assertThat(objectMapper.readValue("\"01-23\"", LocalDateTime.class), is((LocalDateTime) null));
     assertThat(objectMapper.readValue("\"01234567\"", LocalDateTime.class), is(LocalDateTime.of(126, 11, 6, 0, 0)));
@@ -58,4 +71,5 @@ public class LenientLDTDeserializerTest {
     assertThat(objectMapper.readValue("\"2017/01/01 12:34:56\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56)));
     assertThat(objectMapper.readValue("\"2017/01/01 12:34:56.789\"", LocalDateTime.class), is(LocalDateTime.of(2017, 1, 1, 12, 34, 56, 789 * 1000000)));
   }
+
 }

@@ -18,7 +18,14 @@ package jp.furplag.data.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -34,189 +41,208 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
-import jp.furplag.data.json.deser.LenientLDTDeserializer;
+import jp.furplag.data.json.deser.LazyLocalDateTimeDeserializer;
+import jp.furplag.function.Suppressor;
+import jp.furplag.function.Trebuchet;
+import jp.furplag.sandbox.reflect.SavageReflection;
 
 /**
- * utilities for convert between Object and JSON.
+ * easy to use (for me) JSON in Java .
  *
  * @author furplag
- * @since 1.0.0
+ *
  */
-public class Jsonifier {
+public interface Jsonifier {
+
+  /** lazy initialization for {@link ObjectMapper#ObjectMapper()} . */
+  static final class Shell {
+
+    /** {@link ObjectMapper#ObjectMapper()} . */
+    private static final ObjectMapper mapper;
+    static {
+      mapper = new ObjectMapper()
+      // @formatter:off
+        .registerModules(
+          new ParameterNamesModule()
+        , new Jdk8Module()
+        , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
+        )
+        .configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
+        .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
+        .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+        // Allow /** comment */ .
+        .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+        // Allow # comment .
+        .configure(JsonParser.Feature.ALLOW_YAML_COMMENTS, true)
+        // Allow "{"key": "value"... , }" .
+        .configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true)
+        // Allow "{'key': 'value'}" .
+        .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+        // Allow "{key: "value"}" .
+        .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
+        // sort by key name .
+        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+
+        // pretty print for Date/Time .
+        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+        // against failure if no fields .
+        .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+        // against failure if undefined field .
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
+        // igonre empty field .
+        .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
+      // @formatter:on
+      ;
+    }
+
+
+    /**
+     * DRY : test if the object is any of {@link Class} .
+     *
+     * @param mysterio the object which probably the type of {@link Class}
+     * @return true if the object is any of {@link Class}
+     */
+    private static boolean isClass(final Object mysterio) {
+      return mysterio instanceof Class;
+    }
+
+    /**
+     * DRY : test if the object is any of {@link TypeReference} .
+     *
+     * @param mysterio the object which probably the type of {@link TypeReference}
+     * @return true if the object is any of {@link TypeReference}
+     */
+    private static boolean isTypeReference(final Object mysterio) {
+      return mysterio != null && TypeReference.class.isAssignableFrom(mysterio.getClass());
+    }
+
+    /**
+     * DRY : test if the object is any of {@link JavaType} .
+     *
+     * @param mysterio the object which probably the type of {@link JavaType}
+     * @return true if the object is any of {@link JavaType}
+     */
+    private static boolean isJavaType(final Object mysterio) {
+      return mysterio != null && JavaType.class.isAssignableFrom(mysterio.getClass());
+    }
+
+    /**
+     * create the instance of specified class represented by the JSON String .
+     *
+     * @param <T> the type of instance
+     * @param content a text which maybe JSON formatted
+     * @param valueType {@link Class} or an instance of {@link JavaType} or {@link TypeReference}
+     * @return an instance of T
+     * @throws JsonProcessingException if the input JSON structure does not match structure expected for result type
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T deserialize(final String content, final Object valueType) throws JsonProcessingException, IOException {
+      return content == null || !Stream.of((Predicate<Object>) Shell::isClass, (Predicate<Object>) Shell::isTypeReference, (Predicate<Object>) Shell::isJavaType).anyMatch((e) -> e.test(valueType)) ? null :
+        isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) :
+        isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) :
+        mapper.readValue(content, (Class<T>) valueType);
+    }
+
+    /**
+     * stringify specified object .
+     *
+     * @param source an object
+     * @return JSON string
+     * @throws JsonProcessingException if error occured
+     */
+    private static String serialize(final Object source) throws JsonProcessingException {
+      return source == null ? null : mapper.writeValueAsString(source);
+    }
+
+  }
 
   /**
-   * {@link com.fasterxml.jackson.databind.ObjectMapper ObjectMapper}.
+   * create the instance of specified class represented by the JSON String .
+   *
+   * @param <T> the type of instance
+   * @param content a text which maybe JSON formatted
+   * @param valueType {@link Class} or an instance of {@link JavaType} or {@link TypeReference}
+   * @return an instance of T, or null if error occurs
    */
-  private static final ObjectMapper mapper;
+  static <T> T deserialize(final String content, final Object valueType) {
+    return Suppressor.orNull(content, valueType, Shell::deserialize);
+  }
 
-  static {
+  /**
+   * create the instance of specified class represented by the JSON String .
+   *
+   * @param <T> the type of instance
+   * @param content a text which maybe JSON formatted
+   * @param valueType {@link Class} or an instance of {@link JavaType} or {@link TypeReference}
+   * @return an instance of T, or null if error occurs
+   */
+  static <T> T deserializeStrictly(final String content, final Object valueType) throws JsonProcessingException, IOException {
+    return Shell.deserialize(content, valueType);
+  }
+
+  /**
+   * JSON stringify specified object, or null if error occurs .
+   *
+   * @param source an object
+   * @return JSON stringify specified object, or null if error occurs
+   */
+  static String serialize(final Object source) {
     // @formatter:off
-    mapper = new ObjectMapper()
-      .registerModules(
-        new ParameterNamesModule()
-      , new Jdk8Module()
-      , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LenientLDTDeserializer())
-      )
-      .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
+    return Suppressor.orNull(source, Shell::serialize);
+    // @formatter:on
+  }
 
-      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
-      .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
-
-      // Allow /** comment */ .
-      .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
-      // Allow # comment .
-      .configure(JsonParser.Feature.ALLOW_YAML_COMMENTS, true)
-      // Allow "{"key": "value"... , }" .
-      .configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true)
-      // Allow "{'key': 'value'}" .
-      .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
-      // Allow "{key: "value"}" .
-      .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
-
-      // pretty print for Date/Time .
-      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-
-      // sort by key name .
-      .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
-      // against failure if no fields .
-      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-      // against failure if undefined field .
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
-
-      // igonre empty field .
-      .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
-    ;
+  /**
+   * JSON stringify specified object, or null if error occurs .
+   * <p><strong>Note</strong>:<div>field access using reflection if error occurs ( only for serialization ) .</div></p>
+   *
+   * @param source an object
+   * @return JSON stringify specified object, or null if error occurs
+   */
+  static String serializeBrutaly(final Object source) {
     // @formatter:off
+    return Suppressor.orNull(SavageReflection.read(source), Shell::serialize);
+    // @formatter:on
   }
 
   /**
-   * stringify specified object. Throw exceptions if that has failed.
+   * JSON stringify specified object, or error report JSON like below if error occurs .
+   * <pre>
+   * {
+   *   "jsonifier.serializationFailure": {
+   *     error : " class name of error . "
+   *   , message: " error message . "
+   *   }
+   * }
+   * </pre>
    *
-   * @param source an Object, may be null.
-   * @return JSON String.
-   * @throws JsonProcessingException if that has failed
+   * @param source an object
+   * @return JSON stringify specified object, or error
    */
-  public static String serialize(final Object source) throws JsonProcessingException {
-    return source == null ? null : mapper.writeValueAsString(source);
+  static Object serializeOrFailure(final Object source) {
+    // @formatter:off
+    return Trebuchet.orElse(
+      (Trebuchet.ThrowableFunction<Object, Object>) Shell::serialize
+    , (ex, e) -> {
+      Map<String, Map<String, String>> map = new HashMap<>();
+      map.put("jsonifier.serializationFailure"
+      ,  Stream.of(Pair.of("error", ex.getClass().getName()), Pair.of("message", ex.getMessage())).collect(Collectors.toMap(Pair::getLeft, Pair::getRight, (v1, v2) -> v1, LinkedHashMap::new))
+      );
+      return serialize(map);
+    }).apply(source);
+    // @formatter:on
   }
 
   /**
-   * stringify specified object. returns null if that has failed.
+   * stringify specified object .
    *
-   * @param source an Object, may be null.
-   * @return JSON String.
+   * @param source an object
+   * @return JSON string
+   * @throws JsonProcessingException if error occured
    */
-  public static String serializeLazy(final Object source) {
-    try {
-      return serialize(source);
-    } catch (IOException e) {}
-
-    return null;
+  static String serializeStrictly(final Object source) throws JsonProcessingException {
+    return Shell.serialize(source);
   }
-
-  /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param valueType destination Class.
-   * @return the instance of specified Class.
-   * @throws JsonProcessingException if that has failed
-   * @throws IOException if that has failed
-   */
-  public static <T> T deserialize(final String json, final Class<T> valueType) throws JsonProcessingException, IOException {
-    return !deserializable(json, valueType) ? null : mapper.readValue(json, valueType);
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
-   * @return the instance of specified Class.
-   * @throws JsonProcessingException if that has failed
-   * @throws IOException if that has failed
-   */
-  public static <T> T deserialize(final String json, final JavaType javaType) throws JsonProcessingException, IOException {
-    return !deserializable(json, javaType) ? null : mapper.readValue(json, javaType);
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. Throw exceptions if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
-   * @return the instance of specified Class.
-   * @throws JsonProcessingException if that has failed
-   * @throws IOException if that has failed
-   */
-  public static <T> T deserialize(final String json, final TypeReference<T> valueTypeRef) throws JsonProcessingException, IOException {
-    return !deserializable(json, valueTypeRef) ? null : mapper.readValue(json, valueTypeRef);
-  }
-
-  private static boolean deserializable(final String json, final Object valueType) {
-    return !Objects.toString(json, "").isEmpty() && valueType != null;
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. returns null if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param valueType destination Class.
-   * @return the instance of specified Class.
-   *
-   * @since 2.1.0
-   */
-  public static <T> T deserializeLazy(final String json, final Class<T> valueType) {
-    try {
-      return Jsonifier.deserialize(json, valueType);
-    } catch (IOException e) {}
-
-    return null;
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. returns null if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param javaType {@link com.fasterxml.jackson.databind.JavaType JavaType} .
-   * @return the instance of specified Class.
-   *
-   * @since 2.1.0
-   */
-  public static <T> T deserializeLazy(final String json, final JavaType javaType) {
-    try {
-      return Jsonifier.deserialize(json, javaType);
-    } catch (IOException e) {}
-
-    return null;
-  }
-
-  /**
-   * create the instance of specified class represented by the JSON String. returns null if that has failed.
-   *
-   * @param <T> the type which you want to get .
-   * @param json JSON String.
-   * @param valueTypeRef {@link com.fasterxml.jackson.core.type.TypeReference TypeReference}.
-   * @return the instance of specified Class.
-   *
-   * @since 2.1.0
-   */
-  public static <T> T deserializeLazy(final String json, final TypeReference<T> valueTypeRef) {
-    try {
-      return Jsonifier.deserialize(json, valueTypeRef);
-    } catch (IOException e) {}
-
-    return null;
-  }
-
-  /**
-   * Jsonifier instances should NOT be constructed in standard programming.
-   */
-  protected Jsonifier() {}
 }
