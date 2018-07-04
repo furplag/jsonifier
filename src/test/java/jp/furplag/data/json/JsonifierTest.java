@@ -316,6 +316,7 @@ public class JsonifierTest {
   public void testBrutaly() throws JsonProcessingException {
     assertEquals("{}", Jsonifier.serialize(new Unseen()));
     assertEquals("{}", Jsonifier.serializeStrictly(new Unseen()));
+    assertEquals("{}", Jsonifier.serializeOrFailure(new Unseen()));
     assertEquals("{\"theInt\":123,\"theString\":[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]}", Jsonifier.serializeBrutaly(new Unseen()));
   }
 }
