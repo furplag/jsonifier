@@ -218,7 +218,7 @@ public class JsonifierTest {
     assertEquals(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()));
   }
 
-  @SuppressWarnings({ "unused", "unchecked" })
+  @SuppressWarnings({ "unused" })
   @Test
   public void lazy() throws Throwable {
     assertNull(Jsonifier.deserialize("[1, 2]", (Class<?>) null));
