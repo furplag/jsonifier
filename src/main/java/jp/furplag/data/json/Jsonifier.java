@@ -18,11 +18,11 @@ package jp.furplag.data.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,9 +42,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import jp.furplag.data.json.deser.LazyLocalDateTimeDeserializer;
-import jp.furplag.function.Suppressor;
-import jp.furplag.function.Trebuchet;
+import jp.furplag.function.ThrowableBiFunction;
+import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.reflect.SavageReflection;
+import jp.furplag.sandbox.stream.Streamr;
 
 /**
  * easy to use (for me) JSON in Java .
@@ -96,7 +97,6 @@ public interface Jsonifier {
       ;
     }
 
-
     /**
      * DRY : test if the object is any of {@link Class} .
      *
@@ -139,7 +139,7 @@ public interface Jsonifier {
      */
     @SuppressWarnings("unchecked")
     private static <T> T deserialize(final String content, final Object valueType) throws JsonProcessingException, IOException {
-      return content == null || !Stream.of((Predicate<Object>) Shell::isClass, (Predicate<Object>) Shell::isTypeReference, (Predicate<Object>) Shell::isJavaType).anyMatch((e) -> e.test(valueType)) ? null :
+      return content == null || !Stream.of((Predicate<Object>) Shell::isClass, Shell::isTypeReference, Shell::isJavaType).anyMatch((t) -> t.test(valueType)) ? null :
         isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) :
         isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) :
         mapper.readValue(content, (Class<T>) valueType);
@@ -155,7 +155,6 @@ public interface Jsonifier {
     private static String serialize(final Object source) throws JsonProcessingException {
       return source == null ? null : mapper.writeValueAsString(source);
     }
-
   }
 
   /**
@@ -167,7 +166,7 @@ public interface Jsonifier {
    * @return an instance of T, or null if error occurs
    */
   static <T> T deserialize(final String content, final Object valueType) {
-    return Suppressor.orNull(content, valueType, Shell::deserialize);
+    return ThrowableBiFunction.orNull(content, valueType, Shell::deserialize);
   }
 
   /**
@@ -179,7 +178,7 @@ public interface Jsonifier {
    * @return an instance of T, or null if error occurs
    */
   static <T> T deserialize(final String content, final TypeReference<T> valueType) {
-    return Suppressor.orNull(content, valueType, Shell::deserialize);
+    return ThrowableBiFunction.orNull(content, valueType, Shell::deserialize);
   }
 
   /**
@@ -202,7 +201,7 @@ public interface Jsonifier {
    */
   static String serialize(final Object source) {
     // @formatter:off
-    return Suppressor.orNull(source, Shell::serialize);
+    return ThrowableFunction.orNull(source, Shell::serialize);
     // @formatter:on
   }
 
@@ -215,7 +214,7 @@ public interface Jsonifier {
    */
   static String serializeBrutaly(final Object source) {
     // @formatter:off
-    return Suppressor.orNull(SavageReflection.read(source), Shell::serialize);
+    return ThrowableFunction.orNull(SavageReflection.read(source), Shell::serialize);
     // @formatter:on
   }
 
@@ -234,16 +233,42 @@ public interface Jsonifier {
    * @return JSON stringify specified object, or error
    */
   static Object serializeOrFailure(final Object source) {
+    return ThrowableFunction.orElse(source, Shell::serialize, (t, e) -> failureReport(e));
+  }
+
+  /**
+   * JSON stringify error .
+   *
+   * @param error anything thrown
+   * @return JSON stringify error
+   */
+  private static <E extends Throwable> String failureReport(final E error) {
+    return ThrowableFunction.applyOrDefault(wrappingFailureReport(propertalizedException(error)), Shell::serialize, Collections.emptyMap().toString());
+  }
+
+  /**
+   * JSON stringify error .
+   *
+   * @param error anything thrown
+   * @return JSON stringify error
+   */
+  private static <E extends Throwable> Map<String, String> propertalizedException(final E error) {
     // @formatter:off
-    return Trebuchet.orElse(
-      (Trebuchet.ThrowableFunction<Object, Object>) Shell::serialize
-    , (ex, e) -> {
-      Map<String, Map<String, String>> map = new HashMap<>();
-      map.put("jsonifier.serializationFailure"
-      ,  Stream.of(Pair.of("error", ex.getClass().getName()), Pair.of("message", ex.getMessage())).collect(Collectors.toMap(Pair::getLeft, Pair::getRight, (v1, v2) -> v1, LinkedHashMap::new))
-      );
-      return serialize(map);
-    }).apply(source);
+    return error == null ? Collections.emptyMap() :
+      Streamr.collect(Stream.of(Pair.of("error", error.getClass().getName()), Pair.of("message", error.getMessage())), null, LinkedHashMap::new);
+    // @formatter:on
+  }
+
+  /**
+   * JSON stringify error .
+   *
+   * @param error anything thrown
+   * @return JSON stringify error
+   */
+  private static Map<String, Map<String, String>> wrappingFailureReport(final Map<String, String> error) {
+    // @formatter:off
+    return Objects.requireNonNullElse(error, Collections.emptyMap()).isEmpty() ? Collections.emptyMap() :
+      Streamr.collect(Stream.of(Pair.of("jsonifier.serializationFailure", error)), null, LinkedHashMap::new);
     // @formatter:on
   }
 
