@@ -27,14 +27,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 
-import jp.furplag.function.Suppressor;
+import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.stream.Streamr;
 import jp.furplag.text.optimize.Optimizr;
 
@@ -54,6 +54,10 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
 
   /** container of {@link LocalDateTime} parser which includes {@link DateTimeFormatter} . */
   private static final Map<Integer, Function<Long[], LocalDateTime>> parsers;
+
+  /** intermediates for deserializing {@link String} to {@link LocalDateTime} . */
+  private static final Function<String, String[]> optimizr =
+    ((UnaryOperator<String>) Optimizr::optimize).andThen((t) -> t.replaceAll("[\\D]*[\\D&&[^\\-]]", ".").replaceAll("(^\\.)|(\\.$)", "").replaceAll("(\\d)\\D+(\\d)", "$1.$2").split("\\.+", 8));
 
   static {
     final Function<String, DateTimeFormatter> dateTimeFormatter = (pattern) -> DateTimeFormatter.ofPattern(pattern).withResolverStyle(ResolverStyle.LENIENT);
@@ -77,7 +81,7 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
   private static final Function<String, LocalDateTime> deserializr = (text) -> {
     final Long[] arguments = argumentify(text);
 
-    return Suppressor.orNull(arguments, parsers.getOrDefault(arguments.length, (anything) -> null)::apply);
+    return ThrowableFunction.orNull(arguments, parsers.getOrDefault(arguments.length, (anything) -> null)::apply);
   };
 
   /** unnecessary, maybe . */
@@ -95,7 +99,7 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
     } catch (DateTimeException | JsonMappingException e) {
     }
 
-    return Suppressor.orNull(parser.getText(), deserializr::apply);
+    return ThrowableFunction.orNull(parser.getText(), deserializr::apply);
   }
 
   /**
@@ -106,8 +110,7 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
    */
   private static final Long[] argumentify(final String text) {
     // @formatter:off
-    return Streamr.stream(Optimizr.optimize(text).replaceAll("[\\D]*[\\D&&[^\\-]]", ".").replaceAll("(^\\.)|(\\.$)", "").replaceAll("(\\d)\\D+(\\d)", "$1.$2").split("\\.+", 8))
-      .filter(((Predicate<String>) String::isEmpty).negate())
+    return Streamr.stream(optimizr.apply(text))
       .map(Long::valueOf).mapToLong(Long::longValue).boxed().toArray(Long[]::new);
     // @formatter:on
   }

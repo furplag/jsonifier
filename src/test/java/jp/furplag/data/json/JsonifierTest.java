@@ -46,8 +46,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import jp.furplag.data.json.entity.Instance;
 import jp.furplag.data.json.entity.Nothing;
 import jp.furplag.data.json.entity.Unseen;
-import jp.furplag.function.Trebuchet;
-import jp.furplag.function.Trebuchet.ThrowableFunction;
+import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.reflect.SavageReflection;
 
 public class JsonifierTest {
@@ -305,7 +304,7 @@ public class JsonifierTest {
     assertNull(Jsonifier.serialize(new Nothing()));
     assertEquals(Jsonifier.serializeStrictly(new Instance()), Jsonifier.serialize(new Instance()));
 
-    final String expect = Trebuchet.orElse((ThrowableFunction<Object, String>) (x) -> Jsonifier.serializeStrictly(new Nothing()), (ex, e) -> String.format("{\"jsonifier.serializationFailure\":{\"error\":\"%s\",\"message\":\"%s\"}}", ex.getClass().getName(), ex.getMessage())).apply(null);
+    final String expect = ThrowableFunction.of((x) -> Jsonifier.serializeStrictly(new Nothing()), (t, e) -> String.format("{\"jsonifier.serializationFailure\":{\"error\":\"%s\",\"message\":\"%s\"}}", e.getClass().getName(), e.getMessage())).apply((Object) null);
     assertEquals(expect, Jsonifier.serializeOrFailure(new Nothing()));
 
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
