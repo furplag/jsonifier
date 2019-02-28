@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -56,8 +55,10 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
   private static final Map<Integer, Function<Long[], LocalDateTime>> parsers;
 
   /** intermediates for deserializing {@link String} to {@link LocalDateTime} . */
-  private static final Function<String, String[]> optimizr =
-    ((UnaryOperator<String>) Optimizr::optimize).andThen((t) -> t.replaceAll("[\\D]*[\\D&&[^\\-]]", ".").replaceAll("(^\\.)|(\\.$)", "").replaceAll("(\\d)\\D+(\\d)", "$1.$2").split("\\.+", 8));
+  private static final Function<String, String[]> optimizr;
+
+  /** deserialize to {@link LocalDateTime} using the one of {@link #parsers} which seems to fit . */
+  private static final Function<String, LocalDateTime> deserializr;
 
   static {
     final Function<String, DateTimeFormatter> dateTimeFormatter = (pattern) -> DateTimeFormatter.ofPattern(pattern).withResolverStyle(ResolverStyle.LENIENT);
@@ -75,14 +76,13 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
     });
     // @formatter:on
     parsers = Collections.unmodifiableMap(parsers0);
+    optimizr = ThrowableFunction.of(Optimizr::optimize, (t, e) -> (String) null)
+      .andThen((t) -> t.replaceAll("[\\D]*[\\D&&[^\\-]]", "."))
+      .andThen((t) -> t.replaceAll("(^\\.)|(\\.$)", ""))
+      .andThen((t) -> t.replaceAll("(\\d)\\D+(\\d)", "$1.$2"))
+      .andThen((t) -> t.split("\\.+", 8));
+    deserializr = (t) -> ThrowableFunction.orNull(argumentify(t), (x) -> parsers.get(x.length).apply(x));
   }
-
-  /** deserialize to {@link LocalDateTime} using the one of {@link #parsers} which seems to fit . */
-  private static final Function<String, LocalDateTime> deserializr = (text) -> {
-    final Long[] arguments = argumentify(text);
-
-    return ThrowableFunction.orNull(arguments, parsers.getOrDefault(arguments.length, (anything) -> null)::apply);
-  };
 
   /** unnecessary, maybe . */
   public LazyLocalDateTimeDeserializer() {
@@ -109,9 +109,6 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
    * @return the array of numerics
    */
   private static final Long[] argumentify(final String text) {
-    // @formatter:off
-    return Streamr.stream(optimizr.apply(text))
-      .map(Long::valueOf).mapToLong(Long::longValue).boxed().toArray(Long[]::new);
-    // @formatter:on
+    return Streamr.stream(optimizr.apply(text)).map(Long::valueOf).mapToLong(Long::longValue).boxed().toArray(Long[]::new);
   }
 }

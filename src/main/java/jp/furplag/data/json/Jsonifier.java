@@ -81,8 +81,8 @@ public interface Jsonifier {
         .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
         // Allow "{key: "value"}" .
         .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
-        // sort by key name .
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+//        // sort by key name .
+//        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
 
         // pretty print for Date/Time .
         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -268,7 +268,7 @@ public interface Jsonifier {
   private static Map<String, Map<String, String>> wrappingFailureReport(final Map<String, String> error) {
     // @formatter:off
     return Objects.requireNonNullElse(error, Collections.emptyMap()).isEmpty() ? Collections.emptyMap() :
-      Streamr.collect(Stream.of(Pair.of("jsonifier.serializationFailure", error)), null, LinkedHashMap::new);
+      Streamr.collect(Stream.of(Map.entry("jsonifier.serializationFailure", error)), null, LinkedHashMap::new);
     // @formatter:on
   }
 
