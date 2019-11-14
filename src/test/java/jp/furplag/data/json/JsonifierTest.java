@@ -51,133 +51,25 @@ import jp.furplag.sandbox.trebuchet.Trebuchet;
 
 public class JsonifierTest {
 
-  private String lineSeparator = System.getProperty("line.separator");
-
-  @BeforeEach
-  public void before() {
-    System.setProperty("line.separator", "\n");
+  static enum OneTwo {
+    One, Two;
   }
 
+  private String lineSeparator = System.getProperty("line.separator");
+
   @AfterEach
-  public void after() {
+  void after() {
     System.setProperty("line.separator", lineSeparator);
   }
 
-  @Test
-  public void test() throws JsonProcessingException, IOException {
-    assertNull(Jsonifier.deserializeStrictly("0.0", LocalDateTime.class));
-    assertNull(Jsonifier.deserializeStrictly("'12345-1231'", LocalDateTime.class));
-  }
-
-  @Test
-  public void Jsonifier() throws Throwable {
-    assertNotNull(new Jsonifier() {});
-
-    Constructor<?> c = Jsonifier.Shell.class.getDeclaredConstructor();
-    c.setAccessible(true);
-    assertTrue(c.newInstance() instanceof Jsonifier.Shell);
-  }
-
-  @Test
-  public void serializeNull() throws Throwable {
-    assertEquals((String) null, Jsonifier.serializeStrictly(null));
-  }
-
-  @Test
-  public void serializePrimitives() throws Throwable {
-    assertEquals("true", Jsonifier.serializeStrictly(true));
-    assertEquals("false", Jsonifier.serializeStrictly(!true));
-
-    assertEquals("\"諸\"", Jsonifier.serializeStrictly("諸行無常".charAt(0)));
-  }
-
-  @Test
-  public void serializeIntegers() throws Throwable {
-    assertEquals("-128", Jsonifier.serializeStrictly(Byte.MIN_VALUE));
-    assertEquals("0", Jsonifier.serializeStrictly((byte) 0));
-    assertEquals("127", Jsonifier.serializeStrictly(Byte.MAX_VALUE));
-
-    assertEquals("-32768", Jsonifier.serializeStrictly(Short.MIN_VALUE));
-    assertEquals("0", Jsonifier.serializeStrictly((short) 0));
-    assertEquals("32767", Jsonifier.serializeStrictly(Short.MAX_VALUE));
-
-    assertEquals("-2147483648", Jsonifier.serializeStrictly(Integer.MIN_VALUE));
-    assertEquals("0", Jsonifier.serializeStrictly(0));
-    assertEquals("2147483647", Jsonifier.serializeStrictly(Integer.MAX_VALUE));
-
-    assertEquals("-9223372036854775808", Jsonifier.serializeStrictly(Long.MIN_VALUE));
-    assertEquals("0", Jsonifier.serializeStrictly(0L));
-    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(Long.MAX_VALUE));
-
-    assertEquals("123", Jsonifier.serializeStrictly(Byte.valueOf("123")));
-    assertEquals("1234", Jsonifier.serializeStrictly(Short.valueOf("1234")));
-    assertEquals("123456", Jsonifier.serializeStrictly(Integer.valueOf("123456")));
-    assertEquals("12345678901", Jsonifier.serializeStrictly(Long.valueOf("12345678901")));
-    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(BigInteger.valueOf(Long.MAX_VALUE)));
-  }
-
-  @Test
-  public void serializeFractions() throws Throwable {
-    assertEquals(Jsonifier.serializeStrictly(-.123456f), "-0.123456");
-    assertEquals(Jsonifier.serializeStrictly(0f), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(0.0f), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(.0f), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(1E-6f), "1.0E-6");
-    assertEquals(Jsonifier.serializeStrictly(.123456f), "0.123456");
-
-    assertEquals(Jsonifier.serializeStrictly(-.1234567890123d), "-0.1234567890123");
-    assertEquals(Jsonifier.serializeStrictly(0d), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(0.0d), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(.0d), "0.0");
-    assertEquals(Jsonifier.serializeStrictly(1E-12d), "1.0E-12");
-    assertEquals(Jsonifier.serializeStrictly(.1234567890123d), "0.1234567890123");
-
-    assertEquals(Jsonifier.serializeStrictly(Double.valueOf(Double.MAX_VALUE)), "1.7976931348623157E308");
-  }
-
-  @Test
-  public void serializeWrappers() throws Throwable {
-    assertEquals("true", Jsonifier.serializeStrictly(Boolean.TRUE));
-    assertEquals("false", Jsonifier.serializeStrictly(Boolean.FALSE));
-
-    assertEquals("\"諸\"", Jsonifier.serializeStrictly(Character.valueOf("諸行無常".charAt(0))));
-  }
-
-  @Test
-  public void serializeStrings() throws Throwable {
-    assertEquals("\"\"", Jsonifier.serializeStrictly(""));
-    assertEquals("\"南無阿弥陀仏\"", Jsonifier.serializeStrictly("南無阿弥陀仏"));
-    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly("南無阿弥陀仏".split("")));
-  }
-
-  static enum OneTwo {
-    One, Two;
-  };
-
-  @Test
-  public void serialize() throws Throwable {
-    assertEquals("\"One\"", Jsonifier.serializeStrictly(OneTwo.One));
-
-    assertEquals("[]", Jsonifier.serializeStrictly(new Object[] {}));
-    assertEquals("[]", Jsonifier.serializeStrictly(new Object[][] {}));
-    assertEquals("[1,2.3,0.3456,\"789\",false]", Jsonifier.serializeStrictly(new Object[] {1, 2.3f, .3456d, "789", false}));
-    assertEquals("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]", Jsonifier.serializeStrictly(new Object[][] {{1, 2, 3, 4}, {.5, .6, .7, .8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}));
-    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toCollection(LinkedHashSet::new))));
-    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.asList("南無阿弥陀仏".split(""))));
-    assertEquals("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2))));
-    assertEquals("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2)).entrySet().stream().collect(Collectors.toMap(k -> k.getKey(), v -> v, (v1, v2) -> v2))));
-
-    Instance that = new Instance();
-    that.versionNo = 1;
-    that.deleted = false;
-    that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
-    that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
-    assertEquals("{\"versionNo\":1,\"deleted\":false,\"created\":\"2017-01-01T01:23:45.678\",\"modified\":\"2017-01-23T01:23:45.678\"}", Jsonifier.serializeStrictly(that));
+  @BeforeEach
+  void before() {
+    System.setProperty("line.separator", "\n");
   }
 
   @SuppressWarnings("unchecked")
   @Test
-  public void deserialize() throws Throwable {
+  void deserialize() throws Throwable {
     assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{}", Nothing.class));
     assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{name:'john'}", Nothing.class));
 
@@ -217,9 +109,18 @@ public class JsonifierTest {
     assertEquals(those.values().stream().map(Objects::toString).sorted().collect(Collectors.joining()), ((Map<String, Object>) (Jsonifier.deserializeStrictly("{versionNo: '1', deleted: false, created: '2017-01-01T01:23:45.678', modified: '2017-01-23T01:23:45.678'}", new TypeReference<Map<String, Object>>() {}))).values().stream().map(Objects::toString).sorted().collect(Collectors.joining()));
   }
 
+  @Test
+  void Jsonifier() throws Throwable {
+    assertNotNull(new Jsonifier() {});
+
+    Constructor<?> c = Jsonifier.Shell.class.getDeclaredConstructor();
+    c.setAccessible(true);
+    assertTrue(c.newInstance() instanceof Jsonifier.Shell);
+  }
+
   @SuppressWarnings({ "unused" })
   @Test
-  public void lazy() throws Throwable {
+  void lazy() throws Throwable {
     assertNull(Jsonifier.deserialize("[1, 2]", (Class<?>) null));
     assertNull(Jsonifier.deserialize("[1, 2]", (JavaType) null));
     assertNull(Jsonifier.deserialize("[1, 2]", (TypeReference<?>) null));
@@ -312,7 +213,106 @@ public class JsonifierTest {
   }
 
   @Test
-  public void testBrutaly() throws JsonProcessingException {
+  void serialize() throws Throwable {
+    assertEquals("\"One\"", Jsonifier.serializeStrictly(OneTwo.One));
+
+    assertEquals("[]", Jsonifier.serializeStrictly(new Object[] {}));
+    assertEquals("[]", Jsonifier.serializeStrictly(new Object[][] {}));
+    assertEquals("[1,2.3,0.3456,\"789\",false]", Jsonifier.serializeStrictly(new Object[] {1, 2.3f, .3456d, "789", false}));
+    assertEquals("[[1,2,3,4],[0.5,0.6,0.7,0.8],[\"9\",\"yep\",\"Nope\"],[false,true],[\"One\",\"Two\"]]", Jsonifier.serializeStrictly(new Object[][] {{1, 2, 3, 4}, {.5, .6, .7, .8}, {"9", "yep", "Nope"}, {false, true}, OneTwo.values()}));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).collect(Collectors.toCollection(LinkedHashSet::new))));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly(Arrays.asList("南無阿弥陀仏".split(""))));
+    assertEquals("{\"0\":\"南\",\"1\":\"無\",\"2\":\"阿\",\"3\":\"弥\",\"4\":\"陀\",\"5\":\"仏\"}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2))));
+    assertEquals("{\"0\":{\"0\":\"南\"},\"1\":{\"1\":\"無\"},\"2\":{\"2\":\"阿\"},\"3\":{\"3\":\"弥\"},\"4\":{\"4\":\"陀\"},\"5\":{\"5\":\"仏\"}}", Jsonifier.serializeStrictly(Arrays.stream("南無阿弥陀仏".split("")).map(s -> "南無阿弥陀仏".indexOf(s)).collect(Collectors.toMap(k -> Integer.valueOf(k), v -> "南無阿弥陀仏".substring(v, v + 1), (v1, v2) -> v2)).entrySet().stream().collect(Collectors.toMap(k -> k.getKey(), v -> v, (v1, v2) -> v2))));
+
+    Instance that = new Instance();
+    that.versionNo = 1;
+    that.deleted = false;
+    that.created = LocalDateTime.of(2017, 1, 1, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
+    that.modified = LocalDateTime.of(2017, 1, 23, 1, 23, 45).plus(678, ChronoUnit.MILLIS);
+    assertEquals("{\"versionNo\":1,\"deleted\":false,\"created\":\"2017-01-01T01:23:45.678\",\"modified\":\"2017-01-23T01:23:45.678\"}", Jsonifier.serializeStrictly(that));
+  }
+
+  @Test
+  void serializeFractions() throws Throwable {
+    assertEquals(Jsonifier.serializeStrictly(-.123456f), "-0.123456");
+    assertEquals(Jsonifier.serializeStrictly(0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(0.0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(.0f), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(1E-6f), "1.0E-6");
+    assertEquals(Jsonifier.serializeStrictly(.123456f), "0.123456");
+
+    assertEquals(Jsonifier.serializeStrictly(-.1234567890123d), "-0.1234567890123");
+    assertEquals(Jsonifier.serializeStrictly(0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(0.0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(.0d), "0.0");
+    assertEquals(Jsonifier.serializeStrictly(1E-12d), "1.0E-12");
+    assertEquals(Jsonifier.serializeStrictly(.1234567890123d), "0.1234567890123");
+
+    assertEquals(Jsonifier.serializeStrictly(Double.valueOf(Double.MAX_VALUE)), "1.7976931348623157E308");
+  }
+
+  @Test
+  void serializeIntegers() throws Throwable {
+    assertEquals("-128", Jsonifier.serializeStrictly(Byte.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly((byte) 0));
+    assertEquals("127", Jsonifier.serializeStrictly(Byte.MAX_VALUE));
+
+    assertEquals("-32768", Jsonifier.serializeStrictly(Short.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly((short) 0));
+    assertEquals("32767", Jsonifier.serializeStrictly(Short.MAX_VALUE));
+
+    assertEquals("-2147483648", Jsonifier.serializeStrictly(Integer.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly(0));
+    assertEquals("2147483647", Jsonifier.serializeStrictly(Integer.MAX_VALUE));
+
+    assertEquals("-9223372036854775808", Jsonifier.serializeStrictly(Long.MIN_VALUE));
+    assertEquals("0", Jsonifier.serializeStrictly(0L));
+    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(Long.MAX_VALUE));
+
+    assertEquals("123", Jsonifier.serializeStrictly(Byte.valueOf("123")));
+    assertEquals("1234", Jsonifier.serializeStrictly(Short.valueOf("1234")));
+    assertEquals("123456", Jsonifier.serializeStrictly(Integer.valueOf("123456")));
+    assertEquals("12345678901", Jsonifier.serializeStrictly(Long.valueOf("12345678901")));
+    assertEquals("9223372036854775807", Jsonifier.serializeStrictly(BigInteger.valueOf(Long.MAX_VALUE)));
+  }
+
+  @Test
+  void serializeNull() throws Throwable {
+    assertEquals((String) null, Jsonifier.serializeStrictly(null));
+  }
+
+  @Test
+  void serializePrimitives() throws Throwable {
+    assertEquals("true", Jsonifier.serializeStrictly(true));
+    assertEquals("false", Jsonifier.serializeStrictly(!true));
+
+    assertEquals("\"諸\"", Jsonifier.serializeStrictly("諸行無常".charAt(0)));
+  };
+
+  @Test
+  void serializeStrings() throws Throwable {
+    assertEquals("\"\"", Jsonifier.serializeStrictly(""));
+    assertEquals("\"南無阿弥陀仏\"", Jsonifier.serializeStrictly("南無阿弥陀仏"));
+    assertEquals("[\"南\",\"無\",\"阿\",\"弥\",\"陀\",\"仏\"]", Jsonifier.serializeStrictly("南無阿弥陀仏".split("")));
+  }
+
+  @Test
+  void serializeWrappers() throws Throwable {
+    assertEquals("true", Jsonifier.serializeStrictly(Boolean.TRUE));
+    assertEquals("false", Jsonifier.serializeStrictly(Boolean.FALSE));
+
+    assertEquals("\"諸\"", Jsonifier.serializeStrictly(Character.valueOf("諸行無常".charAt(0))));
+  }
+
+  @Test
+  void test() throws JsonProcessingException, IOException {
+    assertNull(Jsonifier.deserializeStrictly("0.0", LocalDateTime.class));
+    assertNull(Jsonifier.deserializeStrictly("'12345-1231'", LocalDateTime.class));
+  }
+
+  @Test
+  void testBrutaly() throws JsonProcessingException {
     assertEquals("{}", Jsonifier.serialize(new Unseen()));
     assertEquals("{}", Jsonifier.serializeStrictly(new Unseen()));
     assertEquals("{}", Jsonifier.serializeOrFailure(new Unseen()));

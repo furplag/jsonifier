@@ -99,36 +99,6 @@ public interface Jsonifier {
     }
 
     /**
-     * DRY : test if the object is any of {@link Class} .
-     *
-     * @param mysterio the object which probably the type of {@link Class}
-     * @return true if the object is any of {@link Class}
-     */
-    private static boolean isClass(final Object mysterio) {
-      return mysterio instanceof Class;
-    }
-
-    /**
-     * DRY : test if the object is any of {@link TypeReference} .
-     *
-     * @param mysterio the object which probably the type of {@link TypeReference}
-     * @return true if the object is any of {@link TypeReference}
-     */
-    private static boolean isTypeReference(final Object mysterio) {
-      return mysterio != null && TypeReference.class.isAssignableFrom(mysterio.getClass());
-    }
-
-    /**
-     * DRY : test if the object is any of {@link JavaType} .
-     *
-     * @param mysterio the object which probably the type of {@link JavaType}
-     * @return true if the object is any of {@link JavaType}
-     */
-    private static boolean isJavaType(final Object mysterio) {
-      return mysterio != null && JavaType.class.isAssignableFrom(mysterio.getClass());
-    }
-
-    /**
      * create the instance of specified class represented by the JSON String .
      *
      * @param <T> the type of instance
@@ -142,6 +112,36 @@ public interface Jsonifier {
     private static <T> T deserialize(final String content, final Object valueType) throws JsonProcessingException, IOException {
       return content == null || !Stream.of((Predicate<Object>) Shell::isClass, Shell::isTypeReference, Shell::isJavaType).anyMatch((t) -> t.test(valueType)) ? null
           : isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) : isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) : mapper.readValue(content, (Class<T>) valueType);
+    }
+
+    /**
+     * DRY : test if the object is any of {@link Class} .
+     *
+     * @param mysterio the object which probably the type of {@link Class}
+     * @return true if the object is any of {@link Class}
+     */
+    private static boolean isClass(final Object mysterio) {
+      return mysterio instanceof Class;
+    }
+
+    /**
+     * DRY : test if the object is any of {@link JavaType} .
+     *
+     * @param mysterio the object which probably the type of {@link JavaType}
+     * @return true if the object is any of {@link JavaType}
+     */
+    private static boolean isJavaType(final Object mysterio) {
+      return mysterio != null && JavaType.class.isAssignableFrom(mysterio.getClass());
+    }
+
+    /**
+     * DRY : test if the object is any of {@link TypeReference} .
+     *
+     * @param mysterio the object which probably the type of {@link TypeReference}
+     * @return true if the object is any of {@link TypeReference}
+     */
+    private static boolean isTypeReference(final Object mysterio) {
+      return mysterio != null && TypeReference.class.isAssignableFrom(mysterio.getClass());
     }
 
     /**
@@ -193,6 +193,28 @@ public interface Jsonifier {
   }
 
   /**
+   * JSON stringify error .
+   *
+   * @param error anything thrown
+   * @return JSON stringify error
+   */
+  private static <EX extends Throwable> String failureReport(final EX error) {
+    return Trebuchet.Functions.orElse(wrappingFailureReport(propertalizedException(error)), Shell::serialize, () -> "{}");
+  }
+
+  /**
+   * JSON stringify error .
+   *
+   * @param error anything thrown
+   * @return JSON stringify error
+   */
+  private static <EX extends Throwable> Map<String, String> propertalizedException(final EX error) {/* @formatter:off */
+    return new LinkedHashMap<>() {{
+      Optional.ofNullable(error).ifPresent(((Consumer<EX>) (_error) -> put("error", _error.getClass().getName())).andThen((_error) -> put("message", _error.getMessage())));
+    }};
+  /* @formatter:on */}
+
+  /**
    * JSON stringify specified object, or null if error occurs .
    *
    * @param source an object
@@ -239,26 +261,15 @@ public interface Jsonifier {
   }
 
   /**
-   * JSON stringify error .
+   * stringify specified object .
    *
-   * @param error anything thrown
-   * @return JSON stringify error
+   * @param source an object
+   * @return JSON string
+   * @throws JsonProcessingException if error occured
    */
-  private static <EX extends Throwable> String failureReport(final EX error) {
-    return Trebuchet.Functions.orElse(wrappingFailureReport(propertalizedException(error)), Shell::serialize, () -> "{}");
+  static String serializeStrictly(final Object source) throws JsonProcessingException {
+    return Shell.serialize(source);
   }
-
-  /**
-   * JSON stringify error .
-   *
-   * @param error anything thrown
-   * @return JSON stringify error
-   */
-  private static <EX extends Throwable> Map<String, String> propertalizedException(final EX error) {/* @formatter:off */
-    return new LinkedHashMap<>() {{
-      Optional.ofNullable(error).ifPresent(((Consumer<EX>) (_error) -> put("error", _error.getClass().getName())).andThen((_error) -> put("message", _error.getMessage())));
-    }};
-  /* @formatter:on */}
 
   /**
    * JSON stringify error .
@@ -271,15 +282,4 @@ public interface Jsonifier {
       Optional.ofNullable(error).ifPresent((_error) -> put("jsonifier.serializationFailure", _error));
     }};
   /* @formatter:on */}
-
-  /**
-   * stringify specified object .
-   *
-   * @param source an object
-   * @return JSON string
-   * @throws JsonProcessingException if error occured
-   */
-  static String serializeStrictly(final Object source) throws JsonProcessingException {
-    return Shell.serialize(source);
-  }
 }

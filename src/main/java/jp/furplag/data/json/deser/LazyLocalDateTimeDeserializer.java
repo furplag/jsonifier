@@ -88,6 +88,16 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
   }
 
   /**
+   * intermediates for deserializing {@link String} to {@link LocalDateTime} .
+   *
+   * @param text the text which possibly parsable to {@link LocalDateTime}
+   * @return the array of numerics
+   */
+  private static final Long[] argumentify(final String text) {
+    return Streamr.stream(optimizr.apply(text)).map(Long::valueOf).mapToLong(Long::longValue).boxed().toArray(Long[]::new);
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -98,15 +108,5 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
     }
 
     return Trebuchet.Functions.orNot(parser.getText(), deserializr::apply);
-  }
-
-  /**
-   * intermediates for deserializing {@link String} to {@link LocalDateTime} .
-   *
-   * @param text the text which possibly parsable to {@link LocalDateTime}
-   * @return the array of numerics
-   */
-  private static final Long[] argumentify(final String text) {
-    return Streamr.stream(optimizr.apply(text)).map(Long::valueOf).mapToLong(Long::longValue).boxed().toArray(Long[]::new);
   }
 }
