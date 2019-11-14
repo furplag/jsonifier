@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package jp.furplag.data.json;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -40,59 +39,62 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-
 import jp.furplag.data.json.deser.LazyLocalDateTimeDeserializer;
-import jp.furplag.function.ThrowableBiFunction;
-import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.reflect.SavageReflection;
-import jp.furplag.sandbox.stream.Streamr;
+import jp.furplag.sandbox.trebuchet.Trebuchet;
 
 /**
  * easy to use (for me) JSON in Java .
  *
  * @author furplag
  *
+ * @param <T> the type which origin under converting
  */
-public interface Jsonifier {
+public interface Jsonifier<T> {
 
   /** lazy initialization for {@link ObjectMapper#ObjectMapper()} . */
   static final class Shell {
 
     /** {@link ObjectMapper#ObjectMapper()} . */
     private static final ObjectMapper mapper;
-    static {
-      mapper = new ObjectMapper()
-      // @formatter:off
-        .registerModules(
-          new ParameterNamesModule()
-        , new Jdk8Module()
-        , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
-        )
-        .configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
-        .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
-        .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+    static {/* @formatter:off */
+      mapper = new ObjectMapper(new JsonFactoryBuilder()
         // Allow /** comment */ .
-        .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+        .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
         // Allow # comment .
-        .configure(JsonParser.Feature.ALLOW_YAML_COMMENTS, true)
+        .enable(JsonReadFeature.ALLOW_YAML_COMMENTS)
         // Allow "{"key": "value"... , }" .
-        .configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true)
+        .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
         // Allow "{'key': 'value'}" .
-        .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+        .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
         // Allow "{key: "value"}" .
-        .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
-//        // sort by key name .
-//        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+        .enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES)
+        .build()
+      )
 
-        // pretty print for Date/Time .
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        // against failure if no fields .
-        .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-        // against failure if undefined field .
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
-        // igonre empty field .
-        .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
+      // @formatter:off
+      .registerModules(
+        new ParameterNamesModule()
+      , new Jdk8Module()
+      , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
+      )
+      .configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
+      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
+      .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+      // Allow "{key: "value"}" .
+      .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
+      // sort by key name .
+      // .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+
+      // pretty print for Date/Time .
+      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+      // against failure if no fields .
+      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+      // against failure if undefined field .
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
+      // igonre empty field .
+      .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
       // @formatter:on
       ;
     }
@@ -139,10 +141,8 @@ public interface Jsonifier {
      */
     @SuppressWarnings("unchecked")
     private static <T> T deserialize(final String content, final Object valueType) throws JsonProcessingException, IOException {
-      return content == null || !Stream.of((Predicate<Object>) Shell::isClass, Shell::isTypeReference, Shell::isJavaType).anyMatch((t) -> t.test(valueType)) ? null :
-        isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) :
-        isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) :
-        mapper.readValue(content, (Class<T>) valueType);
+      return content == null || !Stream.of((Predicate<Object>) Shell::isClass, Shell::isTypeReference, Shell::isJavaType).anyMatch((t) -> t.test(valueType)) ? null
+          : isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) : isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) : mapper.readValue(content, (Class<T>) valueType);
     }
 
     /**
@@ -166,7 +166,7 @@ public interface Jsonifier {
    * @return an instance of T, or null if error occurs
    */
   static <T> T deserialize(final String content, final Object valueType) {
-    return ThrowableBiFunction.orNull(content, valueType, Shell::deserialize);
+    return Trebuchet.Functions.orNot(content, valueType, Shell::deserialize);
   }
 
   /**
@@ -178,7 +178,7 @@ public interface Jsonifier {
    * @return an instance of T, or null if error occurs
    */
   static <T> T deserialize(final String content, final TypeReference<T> valueType) {
-    return ThrowableBiFunction.orNull(content, valueType, Shell::deserialize);
+    return Trebuchet.Functions.orNot(content, valueType, Shell::deserialize);
   }
 
   /**
@@ -201,25 +201,28 @@ public interface Jsonifier {
    */
   static String serialize(final Object source) {
     // @formatter:off
-    return ThrowableFunction.orNull(source, Shell::serialize);
+    return Trebuchet.Functions.orNot(source, Shell::serialize);
     // @formatter:on
   }
 
   /**
    * JSON stringify specified object, or null if error occurs .
-   * <p><strong>Note</strong>:<div>field access using reflection if error occurs ( only for serialization ) .</div></p>
+   * <p>
+   * <strong>Note</strong>:<div>field access using reflection if error occurs ( only for serialization ) .</div>
+   * </p>
    *
    * @param source an object
    * @return JSON stringify specified object, or null if error occurs
    */
   static String serializeBrutaly(final Object source) {
     // @formatter:off
-    return ThrowableFunction.orNull(SavageReflection.read(source), Shell::serialize);
+    return Trebuchet.Functions.orNot(SavageReflection.read(source), Shell::serialize);
     // @formatter:on
   }
 
   /**
    * JSON stringify specified object, or error report JSON like below if error occurs .
+   *
    * <pre>
    * {
    *   "jsonifier.serializationFailure": {
@@ -233,7 +236,7 @@ public interface Jsonifier {
    * @return JSON stringify specified object, or error
    */
   static Object serializeOrFailure(final Object source) {
-    return ThrowableFunction.orElse(source, Shell::serialize, (t, e) -> failureReport(e));
+    return Trebuchet.Functions.orElse(source, Shell::serialize, (t, e) -> failureReport(e));
   }
 
   /**
@@ -242,8 +245,8 @@ public interface Jsonifier {
    * @param error anything thrown
    * @return JSON stringify error
    */
-  private static <E extends Throwable> String failureReport(final E error) {
-    return ThrowableFunction.applyOrDefault(wrappingFailureReport(propertalizedException(error)), Shell::serialize, Collections.emptyMap().toString());
+  private static <EX extends Throwable> String failureReport(final EX error) {
+    return Trebuchet.Functions.orElse(wrappingFailureReport(propertalizedException(error)), Shell::serialize, () -> "{}");
   }
 
   /**
@@ -252,12 +255,11 @@ public interface Jsonifier {
    * @param error anything thrown
    * @return JSON stringify error
    */
-  private static <E extends Throwable> Map<String, String> propertalizedException(final E error) {
-    // @formatter:off
-    return error == null ? Collections.emptyMap() :
-      Streamr.collect(Stream.of(Pair.of("error", error.getClass().getName()), Pair.of("message", error.getMessage())), null, LinkedHashMap::new);
-    // @formatter:on
-  }
+  private static <EX extends Throwable> Map<String, String> propertalizedException(final EX error) {/* @formatter:off */
+    return new LinkedHashMap<>() {{
+      Optional.ofNullable(error).ifPresent(((Consumer<EX>) (_error) -> put("error", _error.getClass().getName())).andThen((_error) -> put("message", _error.getMessage())));
+    }};
+  /* @formatter:on */}
 
   /**
    * JSON stringify error .
@@ -265,12 +267,11 @@ public interface Jsonifier {
    * @param error anything thrown
    * @return JSON stringify error
    */
-  private static Map<String, Map<String, String>> wrappingFailureReport(final Map<String, String> error) {
-    // @formatter:off
-    return Objects.requireNonNullElse(error, Collections.emptyMap()).isEmpty() ? Collections.emptyMap() :
-      Streamr.collect(Stream.of(Map.entry("jsonifier.serializationFailure", error)), null, LinkedHashMap::new);
-    // @formatter:on
-  }
+  private static Map<String, Map<String, String>> wrappingFailureReport(final Map<String, String> error) {/* @formatter:off */
+    return new HashMap<>() {{
+      Optional.ofNullable(error).ifPresent((_error) -> put("jsonifier.serializationFailure", _error));
+    }};
+  /* @formatter:on */}
 
   /**
    * stringify specified object .
@@ -281,5 +282,14 @@ public interface Jsonifier {
    */
   static String serializeStrictly(final Object source) throws JsonProcessingException {
     return Shell.serialize(source);
+  }
+
+  /**
+   * shorthand for extract the JSON formatted string of the object .
+   *
+   * @return JSON string
+   */
+  default String json() {
+    return serialize(this);
   }
 }
