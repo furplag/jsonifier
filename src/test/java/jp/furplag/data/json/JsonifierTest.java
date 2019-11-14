@@ -71,7 +71,7 @@ public class JsonifierTest {
 
   @Test
   public void Jsonifier() throws Throwable {
-    assertNotNull(new Jsonifier<>() {});
+    assertNotNull(new Jsonifier() {});
 
     Constructor<?> c = Jsonifier.Shell.class.getDeclaredConstructor();
     c.setAccessible(true);
