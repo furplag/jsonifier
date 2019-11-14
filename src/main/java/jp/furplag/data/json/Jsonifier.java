@@ -48,9 +48,8 @@ import jp.furplag.sandbox.trebuchet.Trebuchet;
  *
  * @author furplag
  *
- * @param <T> the type which origin under converting
  */
-public interface Jsonifier<T> {
+public interface Jsonifier {
 
   /** lazy initialization for {@link ObjectMapper#ObjectMapper()} . */
   static final class Shell {
@@ -282,14 +281,5 @@ public interface Jsonifier<T> {
    */
   static String serializeStrictly(final Object source) throws JsonProcessingException {
     return Shell.serialize(source);
-  }
-
-  /**
-   * shorthand for extract the JSON formatted string of the object .
-   *
-   * @return JSON string
-   */
-  default String json() {
-    return serialize(this);
   }
 }
