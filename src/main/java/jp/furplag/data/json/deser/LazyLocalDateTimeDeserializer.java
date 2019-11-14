@@ -27,14 +27,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-
-import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.stream.Streamr;
+import jp.furplag.sandbox.trebuchet.Trebuchet;
 import jp.furplag.text.optimize.Optimizr;
 
 /**
@@ -76,12 +74,12 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
     });
     // @formatter:on
     parsers = Collections.unmodifiableMap(parsers0);
-    optimizr = ThrowableFunction.of(Optimizr::optimize, (t, e) -> (String) null)
+    optimizr = Trebuchet.Functions.Uni.of(Optimizr::optimize)
       .andThen((t) -> t.replaceAll("[\\D]*[\\D&&[^\\-]]", "."))
       .andThen((t) -> t.replaceAll("(^\\.)|(\\.$)", ""))
       .andThen((t) -> t.replaceAll("(\\d)\\D+(\\d)", "$1.$2"))
       .andThen((t) -> t.split("\\.+", 8));
-    deserializr = (t) -> ThrowableFunction.orNull(argumentify(t), (x) -> parsers.get(x.length).apply(x));
+    deserializr = (t) -> Trebuchet.Functions.orNot(argumentify(t), (x) -> parsers.get(x.length).apply(x));
   }
 
   /** unnecessary, maybe . */
@@ -99,7 +97,7 @@ public final class LazyLocalDateTimeDeserializer extends LocalDateTimeDeserializ
     } catch (DateTimeException | JsonMappingException e) {
     }
 
-    return ThrowableFunction.orNull(parser.getText(), deserializr::apply);
+    return Trebuchet.Functions.orNot(parser.getText(), deserializr::apply);
   }
 
   /**

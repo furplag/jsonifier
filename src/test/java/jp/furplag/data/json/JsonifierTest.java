@@ -16,8 +16,11 @@
 
 package jp.furplag.data.json;
 
-import static org.junit.Assert.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.math.BigInteger;
@@ -30,11 +33,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
@@ -42,23 +43,22 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-
 import jp.furplag.data.json.entity.Instance;
 import jp.furplag.data.json.entity.Nothing;
 import jp.furplag.data.json.entity.Unseen;
-import jp.furplag.function.ThrowableFunction;
 import jp.furplag.sandbox.reflect.SavageReflection;
+import jp.furplag.sandbox.trebuchet.Trebuchet;
 
 public class JsonifierTest {
 
   private String lineSeparator = System.getProperty("line.separator");
 
-  @Before
+  @BeforeEach
   public void before() {
     System.setProperty("line.separator", "\n");
   }
 
-  @After
+  @AfterEach
   public void after() {
     System.setProperty("line.separator", lineSeparator);
   }
@@ -80,7 +80,7 @@ public class JsonifierTest {
 
   @Test
   public void serializeNull() throws Throwable {
-    assertNull("null", Jsonifier.serializeStrictly(null));
+    assertEquals((String) null, Jsonifier.serializeStrictly(null));
   }
 
   @Test
@@ -304,7 +304,7 @@ public class JsonifierTest {
     assertNull(Jsonifier.serialize(new Nothing()));
     assertEquals(Jsonifier.serializeStrictly(new Instance()), Jsonifier.serialize(new Instance()));
 
-    final String expect = ThrowableFunction.of((x) -> Jsonifier.serializeStrictly(new Nothing()), (t, e) -> String.format("{\"jsonifier.serializationFailure\":{\"error\":\"%s\",\"message\":\"%s\"}}", e.getClass().getName(), e.getMessage())).apply((Object) null);
+    final String expect = Trebuchet.Functions.orElse((Object) null, (x) -> Jsonifier.serializeStrictly(new Nothing()), (t, e) -> String.format("{\"jsonifier.serializationFailure\":{\"error\":\"%s\",\"message\":\"%s\"}}", e.getClass().getName(), e.getMessage()));
     assertEquals(expect, Jsonifier.serializeOrFailure(new Nothing()));
 
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
