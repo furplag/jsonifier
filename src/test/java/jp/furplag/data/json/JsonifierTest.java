@@ -67,7 +67,6 @@ public class JsonifierTest {
     System.setProperty("line.separator", "\n");
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void deserialize() throws Throwable {
     assertEquals(new Nothing(), Jsonifier.deserializeStrictly("{}", Nothing.class));

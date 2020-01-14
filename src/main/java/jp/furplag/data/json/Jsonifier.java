@@ -193,6 +193,18 @@ public interface Jsonifier {
   }
 
   /**
+   * create the instance of specified class represented by the JSON String .
+   *
+   * @param <T> the type of instance
+   * @param content a text which maybe JSON formatted
+   * @param valueType {@link Class} or an instance of {@link JavaType} or {@link TypeReference}
+   * @return an instance of T, or null if error occurs
+   */
+  static <T> T deserializeStrictly(final String content, final TypeReference<T> valueType) throws JsonProcessingException, IOException {
+    return Shell.deserialize(content, valueType);
+  }
+
+  /**
    * JSON stringify error .
    *
    * @param error anything thrown
