@@ -6,7 +6,7 @@
 [![codebeat badge](https://codebeat.co/badges/342132b8-3920-476f-a5b7-5c5b32be1d6a)](https://codebeat.co/projects/github-com-furplag-jsonifier-master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/8d432f5ace747151d1ed/maintainability)](https://codeclimate.com/github/furplag/jsonifier/maintainability)
 
-Utilities for convert between Object and JSON.
+utilities for convert between Object and JSON .
 
 ## Getting Start
 Add the following snippet to any project's pom that depends on your project
@@ -28,7 +28,7 @@ Add the following snippet to any project's pom that depends on your project
   <dependency>
     <groupId>jp.furplag.sandbox</groupId>
     <artifactId>jsonifier</artifactId>
-    <version>2.1.0</version>
+    <version>3.3.0</version>
   </dependency>
 </dependencies>
 ```

@@ -32,17 +32,7 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 public class LazyLocalDateTimeDeserializerTest {
 
   @Test
-  public void testNonCustomized() throws JsonProcessingException, IOException {
-    try {
-      new ObjectMapper().readValue("\"2017-01-01\"", LocalDateTime.class);
-      fail("there must raise InvalidDefinitionException .");
-    } catch (Exception e) {
-      assertTrue(e instanceof InvalidDefinitionException);
-    }
-  }
-
-  @Test
-  public void test() throws JsonProcessingException, IOException {
+  void test() throws JsonProcessingException, IOException {
     // @formatter:off
     final ObjectMapper objectMapper = new ObjectMapper().registerModules(
       new ParameterNamesModule()
@@ -77,4 +67,13 @@ public class LazyLocalDateTimeDeserializerTest {
     assertEquals(LocalDateTime.of(2017, 1, 1, 12, 34, 56, 789 * 1000000), objectMapper.readValue("\"2017/01/01 12:34:56.789\"", LocalDateTime.class));
   }
 
+  @Test
+  void testNonCustomized() throws JsonProcessingException, IOException {
+    try {
+      new ObjectMapper().readValue("\"2017-01-01\"", LocalDateTime.class);
+      fail("there must raise InvalidDefinitionException .");
+    } catch (Exception e) {
+      assertTrue(e instanceof InvalidDefinitionException);
+    }
+  }
 }
