@@ -67,7 +67,7 @@
     <java.version>13</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
-    <jackson.core.version>2.10.1</jackson.core.version>
+    <jackson.core.version>2.12.1</jackson.core.version>
   </properties>
 
   <repositories>
