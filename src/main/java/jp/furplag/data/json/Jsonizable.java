@@ -16,8 +16,10 @@
 package jp.furplag.data.json;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -77,11 +79,8 @@ public interface Jsonizable<T> {
    */
   @SuppressWarnings({ "unchecked" })
   default <U extends Jsonizable<?>> T merge(U source, String... excludeFieldNames) {/* @formatter:off */
-    final BiFunction<U, Set<String>, Stream<Map.Entry<String, Object>>> _filter = (_source, excludes) -> Streamr.Filter.filtering(_source.map().entrySet(), (entry) -> !excludes.contains(entry.getKey()));
-    final Consumer<Map.Entry<String, Object>> _set = (e) -> SavageReflection.set(this, e.getKey(), e.getValue());
-    Trebuchet.Consumers.orNot(
-        source, Streamr.collect(HashSet::new, excludeFieldNames)
-      , (_source, excludes) -> _filter.apply(_source, excludes).forEach(_set)
+    Trebuchet.Consumers.orNot(source, Streamr.collect(HashSet::new, excludeFieldNames)
+      , (_source, excludes) -> Streamr.Filter.filtering(_source.map().entrySet(), (entry) -> !excludes.contains(entry.getKey())).forEach((e) -> SavageReflection.set(this, e.getKey(), e.getValue()))
     );
     /* @formatter:on */
     return (T) this;
