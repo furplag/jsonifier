@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package jp.furplag.data.json;
 
-package jp.furplag.data.json.entity;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
-import java.util.Arrays;
-import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-@SuppressWarnings("unused")
-public final class Unseen {
+@EqualsAndHashCode
+@ToString
+public abstract class Fields implements Serializable {
 
-  private final int theInt = 123;
+  public int versionNo = 1;
 
-  private final List<String> theString = Arrays.asList("南無阿弥陀仏".split(""));
+  public boolean deleted;
+
+  public LocalDateTime created;
+
+  public LocalDateTime modified;
 }

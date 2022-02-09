@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package jp.furplag.data.json;
 
-package jp.furplag.data.json.entity;
+public interface Entity {
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-@EqualsAndHashCode
-@ToString
-public abstract class Fields implements Serializable {
-
-  public int versionNo = 1;
-
-  public boolean deleted;
-
-  public LocalDateTime created;
-
-  public LocalDateTime modified;
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package jp.furplag.data.json.entity;
+package jp.furplag.data.json;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package jp.furplag.data.json;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,9 +42,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import jp.furplag.data.json.entity.Instance;
-import jp.furplag.data.json.entity.Nothing;
-import jp.furplag.data.json.entity.Unseen;
+
 import jp.furplag.sandbox.reflect.SavageReflection;
 import jp.furplag.sandbox.trebuchet.Trebuchet;
 
