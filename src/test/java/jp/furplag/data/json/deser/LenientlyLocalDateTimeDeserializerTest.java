@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
-public class LazyLocalDateTimeDeserializerTest {
+public class LenientlyLocalDateTimeDeserializerTest {
 
   @Test
   void test() throws JsonProcessingException, IOException {
@@ -37,7 +37,7 @@ public class LazyLocalDateTimeDeserializerTest {
     final ObjectMapper objectMapper = new ObjectMapper().registerModules(
       new ParameterNamesModule()
     , new Jdk8Module()
-    , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
+    , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LenientlyLocalDateTimeDeserializer())
     );
     // @formatter:on
 

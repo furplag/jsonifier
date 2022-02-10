@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017+ furplag (https://github.com/furplag)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -33,13 +34,13 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import jp.furplag.data.json.deser.LazyLocalDateTimeDeserializer;
+
+import jp.furplag.data.json.deser.LenientlyLocalDateTimeDeserializer;
 import jp.furplag.sandbox.reflect.SavageReflection;
 import jp.furplag.sandbox.trebuchet.Trebuchet;
 
@@ -75,10 +76,9 @@ public interface Jsonifier {
       .registerModules(
         new ParameterNamesModule()
       , new Jdk8Module()
-      , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LazyLocalDateTimeDeserializer())
+      , new JavaTimeModule().addDeserializer(LocalDateTime.class, new LenientlyLocalDateTimeDeserializer())
       )
       .configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
-      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
       .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
       // Allow "{key: "value"}" .
       .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
@@ -108,7 +108,7 @@ public interface Jsonifier {
      * @throws JsonProcessingException if the input JSON structure does not match structure expected for result type
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked" })
     private static <T> T deserialize(final String content, final Object valueType) throws JsonProcessingException, IOException {
       return content == null || !Stream.of((Predicate<Object>) Shell::isClass, Shell::isTypeReference, Shell::isJavaType).anyMatch((t) -> t.test(valueType)) ? null
           : isJavaType(valueType) ? mapper.readValue(content, (JavaType) valueType) : isTypeReference(valueType) ? mapper.readValue(content, (TypeReference<T>) valueType) : mapper.readValue(content, (Class<T>) valueType);
