@@ -34,7 +34,6 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 
 import jp.furplag.sandbox.stream.Streamr;
 import jp.furplag.sandbox.text.Commonizr;
-import jp.furplag.sandbox.text.Regexr;
 import jp.furplag.sandbox.trebuchet.Trebuchet;
 
 /**
