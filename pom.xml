@@ -22,7 +22,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>jp.furplag.sandbox</groupId>
   <artifactId>jsonifier</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
+  <version>4.0.0</version>
   <packaging>jar</packaging>
   <inceptionYear>2017</inceptionYear>
   <name>${project.artifactId}</name>
