@@ -362,7 +362,7 @@
         <groupId>org.eluder.coveralls</groupId>
         <artifactId>coveralls-maven-plugin</artifactId>
         <configuration>
-          <repoToken>${coveralls.relic.repoToken}</repoToken>
+          <repoToken>${coveralls.jsonifier.repoToken}</repoToken>
         </configuration>
         <dependencies>
           <dependency>
