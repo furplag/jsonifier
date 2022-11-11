@@ -1,6 +1,7 @@
 # jsonifier
 [![Build Status](https://github.com/furplag/jsonifier/actions/workflows/maven.yml/badge.svg?branch=master)](https://github.com/furplag/jsonifier/actions/workflows/maven.yml)
 [![CodeQL Status](https://github.com/furplag/jsonifier/actions/workflows/codeql.yml/badge.svg?branch=master&event=push)](https://github.com/furplag/jsonifier/actions/workflows/codeql.yml)
+[![Coverage Status](https://coveralls.io/repos/github/furplag/jsonifier/badge.svg?branch=master)](https://coveralls.io/github/furplag/jsonifier?branch=master)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8add3a6d45dc4871983e5a2d91497d87)](https://www.codacy.com/gh/furplag/jsonifier/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=furplag/jsonifier&amp;utm_campaign=Badge_Grade)
 [![codebeat badge](https://codebeat.co/badges/342132b8-3920-476f-a5b7-5c5b32be1d6a)](https://codebeat.co/projects/github-com-furplag-jsonifier-master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/8d432f5ace747151d1ed/maintainability)](https://codeclimate.com/github/furplag/jsonifier/maintainability)
